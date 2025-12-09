@@ -20,19 +20,24 @@ export function StarRating({
   const [hoverRating, setHoverRating] = useState<number | null>(null);
 
   const sizeClasses = {
-    sm: "w-3 h-3",
-    md: "w-5 h-5",
-    lg: "w-6 h-6",
+    sm: "w-4 h-4",
+    md: "w-6 h-6",
+    lg: "w-8 h-8",
+  };
+
+  const gapClasses = {
+    sm: "gap-0.5",
+    md: "gap-1",
+    lg: "gap-1.5",
   };
 
   const displayRating = hoverRating ?? rating;
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className={cn("flex items-center", gapClasses[size])}>
       {Array.from({ length: maxRating }).map((_, index) => {
         const starValue = index + 1;
         const isFilled = starValue <= displayRating;
-        const isHalfFilled = starValue - 0.5 === displayRating;
 
         return (
           <button
@@ -40,8 +45,8 @@ export function StarRating({
             type="button"
             disabled={!interactive}
             className={cn(
-              "relative transition-transform duration-150",
-              interactive && "hover:scale-110 cursor-pointer",
+              "relative transition-all duration-200 click-scale",
+              interactive && "hover:scale-125 cursor-pointer",
               !interactive && "cursor-default"
             )}
             onMouseEnter={() => interactive && setHoverRating(starValue)}
@@ -51,10 +56,10 @@ export function StarRating({
             <Star
               className={cn(
                 sizeClasses[size],
-                "transition-colors duration-150",
+                "transition-all duration-200",
                 isFilled
-                  ? "fill-primary text-primary"
-                  : "text-muted-foreground/30"
+                  ? "fill-primary text-primary drop-shadow-[0_0_8px_hsl(20_90%_65%/0.5)]"
+                  : "text-muted-foreground/40"
               )}
             />
           </button>

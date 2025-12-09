@@ -1,10 +1,10 @@
 import { useParams, Link } from "react-router-dom";
-import { Heart, Eye, Plus, Clock, Star, Calendar, ChevronLeft } from "lucide-react";
+import { Heart, Eye, Plus, Clock, Star, ChevronLeft } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/films/StarRating";
-import { getFilmById, getReviewsByFilmId, films } from "@/data/films";
+import { getFilmById, films } from "@/data/films";
 import { FilmCard } from "@/components/films/FilmCard";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 const FilmDetail = () => {
   const { id } = useParams<{ id: string }>();
   const film = getFilmById(id || "");
-  const reviews = getReviewsByFilmId(id || "");
   
   const [isLiked, setIsLiked] = useState(false);
   const [isWatched, setIsWatched] = useState(false);
@@ -25,7 +24,7 @@ const FilmDetail = () => {
         <div className="text-center">
           <h1 className="text-2xl font-display text-foreground mb-4">Film not found</h1>
           <Link to="/films">
-            <Button variant="cinema">Back to Films</Button>
+            <Button variant="peach">Back to Films</Button>
           </Link>
         </div>
       </div>
@@ -41,13 +40,13 @@ const FilmDetail = () => {
       <Navbar />
 
       {/* Hero Backdrop */}
-      <section className="relative h-[60vh] overflow-hidden">
+      <section className="relative h-[55vh] overflow-hidden">
         <img
           src={film.backdrop}
           alt={film.title}
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent" />
         
         {/* Back Button */}
@@ -55,7 +54,7 @@ const FilmDetail = () => {
           to="/films" 
           className="absolute top-24 left-4 md:left-8 z-10"
         >
-          <Button variant="glass" size="sm" className="gap-2">
+          <Button variant="glass" size="sm" className="gap-2 click-scale">
             <ChevronLeft className="w-4 h-4" />
             Back
           </Button>
@@ -63,11 +62,11 @@ const FilmDetail = () => {
       </section>
 
       {/* Film Info */}
-      <section className="container mx-auto px-4 -mt-48 relative z-10">
+      <section className="container mx-auto px-4 -mt-44 relative z-10 pb-28 md:pb-16">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Poster */}
           <div className="shrink-0 animate-slide-up">
-            <div className="w-64 rounded-xl overflow-hidden film-card-shadow glow">
+            <div className="w-52 md:w-60 rounded-2xl overflow-hidden film-card-shadow peach-glow mx-auto md:mx-0">
               <img
                 src={film.poster}
                 alt={film.title}
@@ -78,15 +77,15 @@ const FilmDetail = () => {
 
           {/* Details */}
           <div className="flex-1 space-y-6 animate-slide-up" style={{ animationDelay: "100ms" }}>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground">
                 {film.title}
               </h1>
-              <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-                <span className="text-lg">{film.year}</span>
-                <span className="text-muted-foreground/50">•</span>
-                <span>Directed by <span className="text-foreground">{film.director}</span></span>
-                <span className="text-muted-foreground/50">•</span>
+              <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
+                <span className="text-lg font-medium text-foreground">{film.year}</span>
+                <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+                <span>{film.director}</span>
+                <span className="w-1 h-1 rounded-full bg-muted-foreground" />
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
                   {Math.floor(film.runtime / 60)}h {film.runtime % 60}m
@@ -99,7 +98,7 @@ const FilmDetail = () => {
               {film.genres.map((genre) => (
                 <span 
                   key={genre} 
-                  className="px-3 py-1 bg-secondary rounded-full text-sm text-muted-foreground"
+                  className="px-3.5 py-1.5 bg-secondary rounded-xl text-sm font-medium text-muted-foreground"
                 >
                   {genre}
                 </span>
@@ -107,40 +106,40 @@ const FilmDetail = () => {
             </div>
 
             {/* Rating */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <Star className="w-8 h-8 text-primary fill-primary" />
-                <div>
-                  <p className="text-2xl font-bold text-foreground">{film.rating.toFixed(1)}</p>
-                  <p className="text-xs text-muted-foreground">{film.reviewCount.toLocaleString()} reviews</p>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-peach-gradient rounded-xl px-4 py-2">
+                <Star className="w-6 h-6 text-primary-foreground fill-primary-foreground" />
+                <span className="text-2xl font-bold text-primary-foreground">{film.rating.toFixed(1)}</span>
               </div>
+              <span className="text-sm text-muted-foreground">
+                {film.reviewCount.toLocaleString()} ratings
+              </span>
             </div>
 
             {/* Actions */}
-            <div className="flex flex-wrap items-center gap-3 pt-4">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button 
-                variant={isWatched ? "cinema" : "glass"} 
+                variant={isWatched ? "peach" : "glass"} 
                 size="lg" 
-                className="gap-2"
+                className="gap-2 click-bounce"
                 onClick={() => setIsWatched(!isWatched)}
               >
                 <Eye className="w-5 h-5" />
-                {isWatched ? "Watched" : "Mark as Watched"}
+                {isWatched ? "Watched" : "Mark Watched"}
               </Button>
               <Button 
                 variant={isLiked ? "default" : "glass"} 
                 size="lg" 
-                className="gap-2"
+                className={cn("gap-2 click-bounce", isLiked && "bg-destructive hover:bg-destructive/90")}
                 onClick={() => setIsLiked(!isLiked)}
               >
                 <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
                 {isLiked ? "Liked" : "Like"}
               </Button>
               <Button 
-                variant={inWatchlist ? "default" : "glass"} 
+                variant={inWatchlist ? "peach" : "glass"} 
                 size="lg" 
-                className="gap-2"
+                className="gap-2 click-bounce"
                 onClick={() => setInWatchlist(!inWatchlist)}
               >
                 <Plus className="w-5 h-5" />
@@ -149,8 +148,8 @@ const FilmDetail = () => {
             </div>
 
             {/* User Rating */}
-            <div className="glass rounded-xl p-4 inline-block">
-              <p className="text-sm text-muted-foreground mb-2">Your Rating</p>
+            <div className="glass rounded-2xl p-5 inline-block">
+              <p className="text-sm text-muted-foreground mb-3 font-medium">Your Rating</p>
               <StarRating 
                 rating={userRating} 
                 interactive 
@@ -160,7 +159,7 @@ const FilmDetail = () => {
             </div>
 
             {/* Synopsis */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h2 className="font-display text-xl font-semibold text-foreground">Synopsis</h2>
               <p className="text-muted-foreground leading-relaxed">
                 {film.synopsis}
@@ -174,7 +173,7 @@ const FilmDetail = () => {
                 {film.cast.map((actor) => (
                   <span 
                     key={actor} 
-                    className="px-3 py-1.5 bg-secondary rounded-lg text-sm text-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-secondary rounded-xl text-sm font-medium text-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer click-scale"
                   >
                     {actor}
                   </span>
@@ -183,70 +182,23 @@ const FilmDetail = () => {
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Reviews */}
-      <section className="container mx-auto px-4 py-16">
-        <h2 className="font-display text-2xl font-semibold text-foreground mb-6">
-          Recent Reviews
-        </h2>
-        
-        {reviews.length > 0 ? (
-          <div className="space-y-4">
-            {reviews.map((review) => (
-              <article 
-                key={review.id} 
-                className="glass rounded-xl p-6 space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={review.userAvatar}
-                      alt={review.userName}
-                      className="w-10 h-10 rounded-full"
-                    />
-                    <div>
-                      <p className="font-medium text-foreground">{review.userName}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(review.date).toLocaleDateString('en-US', { 
-                          month: 'long', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <StarRating rating={review.rating} size="sm" />
+        {/* Similar Films */}
+        {similarFilms.length > 0 && (
+          <section className="mt-16">
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">
+              Similar Films
+            </h2>
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+              {similarFilms.map((film) => (
+                <div key={film.id} className="shrink-0">
+                  <FilmCard film={film} size="md" />
                 </div>
-                <p className="text-muted-foreground">{review.content}</p>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <button className="flex items-center gap-1 hover:text-primary transition-colors">
-                    <Heart className="w-4 h-4" />
-                    {review.likes}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground">No reviews yet. Be the first to review!</p>
+              ))}
+            </div>
+          </section>
         )}
       </section>
-
-      {/* Similar Films */}
-      {similarFilms.length > 0 && (
-        <section className="container mx-auto px-4 pb-16">
-          <h2 className="font-display text-2xl font-semibold text-foreground mb-6">
-            Similar Films
-          </h2>
-          <div className="flex flex-wrap gap-4 md:gap-6">
-            {similarFilms.map((film) => (
-              <FilmCard key={film.id} film={film} size="md" />
-            ))}
-          </div>
-        </section>
-      )}
 
       <Footer />
     </div>

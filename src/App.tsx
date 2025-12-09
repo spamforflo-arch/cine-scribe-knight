@@ -8,7 +8,6 @@ import Films from "./pages/Films";
 import FilmDetail from "./pages/FilmDetail";
 import Diary from "./pages/Diary";
 import Lists from "./pages/Lists";
-import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
 
@@ -26,7 +25,6 @@ const App = () => (
           <Route path="/film/:id" element={<FilmDetail />} />
           <Route path="/diary" element={<Diary />} />
           <Route path="/lists" element={<Lists />} />
-          <Route path="/profile" element={<Profile />} />
           <Route path="/search" element={<Search />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
