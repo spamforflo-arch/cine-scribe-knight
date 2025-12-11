@@ -51,13 +51,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        peach: {
-          start: "hsl(var(--peach-start))",
-          mid: "hsl(var(--peach-mid))",
-          end: "hsl(var(--peach-end))",
+        blue: {
+          start: "hsl(var(--blue-start))",
+          mid: "hsl(var(--blue-mid))",
+          end: "hsl(var(--blue-end))",
         },
-        coral: "hsl(var(--coral))",
-        sunset: "hsl(var(--sunset))",
+        cyan: "hsl(var(--cyan))",
+        electric: "hsl(var(--electric))",
         surface: {
           elevated: "hsl(var(--surface-elevated))",
           overlay: "hsl(var(--surface-overlay))",
@@ -108,8 +108,8 @@ export default {
           "50%": { transform: "translateY(-8px)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px -5px hsl(20 90% 65% / 0.4)" },
-          "50%": { boxShadow: "0 0 35px -5px hsl(20 90% 65% / 0.6)" },
+          "0%, 100%": { boxShadow: "0 0 20px -5px hsl(210 100% 55% / 0.4)" },
+          "50%": { boxShadow: "0 0 35px -5px hsl(210 100% 55% / 0.6)" },
         },
       },
       animation: {
@@ -124,8 +124,8 @@ export default {
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "hero-gradient": "linear-gradient(180deg, transparent 0%, hsl(var(--background)) 100%)",
-        "peach-gradient": "linear-gradient(135deg, hsl(15 90% 70%) 0%, hsl(25 85% 60%) 50%, hsl(35 80% 55%) 100%)",
-        "sunset-gradient": "linear-gradient(135deg, hsl(10 80% 60%) 0%, hsl(30 90% 65%) 100%)",
+        "blue-gradient": "linear-gradient(135deg, hsl(210 100% 60%) 0%, hsl(200 90% 50%) 50%, hsl(190 85% 45%) 100%)",
+        "electric-gradient": "linear-gradient(135deg, hsl(220 100% 65%) 0%, hsl(210 100% 55%) 100%)",
       },
     },
   },
