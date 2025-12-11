@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Film, Github, Twitter } from "lucide-react";
+import { Github, Twitter } from "lucide-react";
 
 export function Footer() {
   return (
@@ -8,8 +8,8 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2.5 click-scale">
-            <div className="w-8 h-8 rounded-xl bg-peach-gradient flex items-center justify-center shadow-lg shadow-primary/20">
-              <Film className="w-4 h-4 text-primary-foreground" />
+            <div className="w-8 h-8 rounded-xl bg-blue-gradient flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="text-sm font-bold text-primary-foreground">K</span>
             </div>
             <span className="font-display text-lg font-semibold text-foreground">
               Knight
