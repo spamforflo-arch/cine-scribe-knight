@@ -1,41 +1,45 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { HeroSection } from "@/components/home/HeroSection";
-import { FilmGrid } from "@/components/films/FilmGrid";
-import { films } from "@/data/films";
+import { Button } from "@/components/ui/button";
+import { Compass, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
-  const trendingFilms = films.slice(0, 8);
-  const recentlyWatched = films.slice(2, 6);
-
   return (
-    <div className="min-h-screen bg-background grain">
+    <div className="min-h-screen bg-background grain flex flex-col">
       <Navbar />
       
-      <main>
-        <HeroSection />
-        
-        <div className="container mx-auto px-4 py-12 space-y-12">
-          {/* Trending Films */}
-          <FilmGrid 
-            films={trendingFilms} 
-            title="Trending This Week"
-            showViewAll
-            viewAllLink="/films"
-          />
+      <main className="flex-1 flex items-center justify-center">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-center gap-8 animate-fade-in">
+            {/* Logo */}
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-peach to-peach-dark flex items-center justify-center shadow-2xl shadow-peach/40 animate-float">
+              <span className="font-display text-4xl font-bold text-primary-foreground">K</span>
+            </div>
 
-          {/* Recently Watched */}
-          <FilmGrid 
-            films={recentlyWatched} 
-            title="Recently Watched"
-            cardSize="lg"
-          />
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground text-center">
+              Knight
+            </h1>
 
-          {/* Quick Tip */}
-          <div className="glass rounded-2xl p-6 text-center animate-fade-in">
-            <p className="text-muted-foreground">
-              <span className="text-primary font-semibold">Tip:</span> Hold any film poster to quickly add to watchlist, mark as watched, or rate it!
+            <p className="text-muted-foreground text-center max-w-md">
+              Your personal entertainment diary
             </p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 mt-8">
+              <Link to="/browse">
+                <Button variant="peach" size="xl" className="gap-3 min-w-[200px] click-scale">
+                  <Compass className="w-6 h-6" />
+                  Browse
+                </Button>
+              </Link>
+              <Link to="/diary">
+                <Button variant="glass" size="xl" className="gap-3 min-w-[200px] click-scale">
+                  <BookOpen className="w-6 h-6" />
+                  View Diary
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </main>
