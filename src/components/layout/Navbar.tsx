@@ -23,7 +23,6 @@ export function Navbar() {
             className="flex items-center gap-2.5 group click-scale"
           >
             <div className="w-9 h-9 rounded-xl blue-gradient flex items-center justify-center shadow-lg shadow-primary/30 group-hover:shadow-primary/50 transition-all group-hover:scale-105">
-              <span className="text-lg font-bold text-white">C</span>
             </div>
             <span className="font-display text-xl font-semibold text-foreground tracking-tight">
               Cinestop
