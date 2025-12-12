@@ -22,7 +22,7 @@ const Lists = () => {
                 Curated collections for every mood.
               </p>
             </div>
-            <Button variant="peach" size="lg" className="gap-2 w-fit click-scale">
+            <Button variant="blue" size="lg" className="gap-2 w-fit click-scale">
               <Plus className="w-5 h-5" />
               Create List
             </Button>
@@ -77,7 +77,7 @@ const Lists = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                       
                       {/* Count Badge */}
-                      <div className="absolute top-3 right-3 px-3 py-1 bg-peach-gradient rounded-full text-xs font-bold text-primary-foreground shadow-lg">
+                      <div className="absolute top-3 right-3 px-3 py-1 blue-gradient rounded-full text-xs font-bold text-white shadow-lg">
                         {list.filmIds.length} films
                       </div>
                     </div>

@@ -24,7 +24,7 @@ const FilmDetail = () => {
         <div className="text-center">
           <h1 className="text-2xl font-display text-foreground mb-4">Film not found</h1>
           <Link to="/films">
-            <Button variant="peach">Back to Films</Button>
+            <Button variant="blue">Back to Films</Button>
           </Link>
         </div>
       </div>
@@ -66,7 +66,7 @@ const FilmDetail = () => {
         <div className="flex flex-col md:flex-row gap-8">
           {/* Poster */}
           <div className="shrink-0 animate-slide-up">
-            <div className="w-52 md:w-60 rounded-2xl overflow-hidden film-card-shadow peach-glow mx-auto md:mx-0">
+            <div className="w-52 md:w-60 rounded-2xl overflow-hidden film-card-shadow blue-glow mx-auto md:mx-0">
               <img
                 src={film.poster}
                 alt={film.title}
@@ -107,9 +107,9 @@ const FilmDetail = () => {
 
             {/* Rating */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-peach-gradient rounded-xl px-4 py-2">
-                <Star className="w-6 h-6 text-primary-foreground fill-primary-foreground" />
-                <span className="text-2xl font-bold text-primary-foreground">{film.rating.toFixed(1)}</span>
+              <div className="flex items-center gap-2 blue-gradient rounded-xl px-4 py-2">
+                <Star className="w-6 h-6 text-white fill-white" />
+                <span className="text-2xl font-bold text-white">{film.rating.toFixed(1)}</span>
               </div>
               <span className="text-sm text-muted-foreground">
                 {film.reviewCount.toLocaleString()} ratings
@@ -119,7 +119,7 @@ const FilmDetail = () => {
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button 
-                variant={isWatched ? "peach" : "glass"} 
+                variant={isWatched ? "blue" : "glass"} 
                 size="lg" 
                 className="gap-2 click-bounce"
                 onClick={() => setIsWatched(!isWatched)}
@@ -137,7 +137,7 @@ const FilmDetail = () => {
                 {isLiked ? "Liked" : "Like"}
               </Button>
               <Button 
-                variant={inWatchlist ? "peach" : "glass"} 
+                variant={inWatchlist ? "blue" : "glass"} 
                 size="lg" 
                 className="gap-2 click-bounce"
                 onClick={() => setInWatchlist(!inWatchlist)}

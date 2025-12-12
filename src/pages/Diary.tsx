@@ -64,8 +64,8 @@ const Diary = () => {
                 style={{ animationDelay: `${groupIndex * 100}ms` }}
               >
                 <h2 className="font-display text-xl font-semibold text-foreground mb-5 flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-peach-gradient flex items-center justify-center">
-                    <Calendar className="w-4 h-4 text-primary-foreground" />
+                <div className="w-8 h-8 rounded-xl blue-gradient flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-white" />
                   </div>
                   {label}
                 </h2>
@@ -161,7 +161,7 @@ const Diary = () => {
                 Start tracking films to build your cinema history.
               </p>
               <Link to="/films">
-                <Button variant="peach">Browse Films</Button>
+                <Button variant="blue">Browse Films</Button>
               </Link>
             </div>
           )}
