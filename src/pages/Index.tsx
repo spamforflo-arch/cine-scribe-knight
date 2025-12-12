@@ -14,7 +14,6 @@ const Index = () => {
           <div className="flex flex-col items-center justify-center gap-8 animate-fade-in">
             {/* Logo */}
             <div className="w-24 h-24 rounded-3xl blue-gradient flex items-center justify-center shadow-2xl shadow-primary/40 animate-float blue-glow">
-              <span className="font-display text-4xl font-bold text-white">C</span>
             </div>
 
             <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground text-center">

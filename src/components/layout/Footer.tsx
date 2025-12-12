@@ -9,7 +9,6 @@ export function Footer() {
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2.5 click-scale">
             <div className="w-8 h-8 rounded-xl blue-gradient flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-sm font-bold text-white">C</span>
             </div>
             <span className="font-display text-lg font-semibold text-foreground">
               Cinestop
