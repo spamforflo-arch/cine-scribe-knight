@@ -8,11 +8,11 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2.5 click-scale">
-            <div className="w-8 h-8 rounded-xl bg-blue-gradient flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-sm font-bold text-primary-foreground">K</span>
+            <div className="w-8 h-8 rounded-xl blue-gradient flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="text-sm font-bold text-white">C</span>
             </div>
             <span className="font-display text-lg font-semibold text-foreground">
-              Knight
+              Cinestop
             </span>
           </Link>
 
@@ -41,7 +41,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border/50 mt-8 pt-6 text-center text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} Knight. Made with love for cinema.</p>
+          <p>© {new Date().getFullYear()} Cinestop. Made with love for cinema.</p>
         </div>
       </div>
     </footer>

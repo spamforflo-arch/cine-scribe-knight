@@ -13,12 +13,12 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center gap-8 animate-fade-in">
             {/* Logo */}
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-peach to-peach-dark flex items-center justify-center shadow-2xl shadow-peach/40 animate-float">
-              <span className="font-display text-4xl font-bold text-primary-foreground">K</span>
+            <div className="w-24 h-24 rounded-3xl blue-gradient flex items-center justify-center shadow-2xl shadow-primary/40 animate-float blue-glow">
+              <span className="font-display text-4xl font-bold text-white">C</span>
             </div>
 
             <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground text-center">
-              Knight
+              Cinestop
             </h1>
 
             <p className="text-muted-foreground text-center max-w-md">
@@ -28,7 +28,7 @@ const Index = () => {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center gap-4 mt-8">
               <Link to="/browse">
-                <Button variant="peach" size="xl" className="gap-3 min-w-[200px] click-scale">
+                <Button variant="blue" size="xl" className="gap-3 min-w-[200px] click-scale">
                   <Compass className="w-6 h-6" />
                   Browse
                 </Button>

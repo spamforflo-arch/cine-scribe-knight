@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-md hover:shadow-lg hover:brightness-110 active:brightness-95",
+          "bg-primary text-white shadow-md hover:shadow-lg hover:brightness-110 active:brightness-95",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 active:bg-destructive/80",
         outline:
@@ -21,12 +21,12 @@ const buttonVariants = cva(
           "text-foreground hover:bg-secondary/80 active:bg-secondary",
         link: 
           "text-primary underline-offset-4 hover:underline",
-        peach:
-          "bg-peach-gradient text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:brightness-110 active:brightness-95",
+        blue:
+          "blue-gradient text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:brightness-110 active:brightness-95",
         glass:
           "bg-card/60 backdrop-blur-xl border border-border/50 text-foreground hover:bg-card/80 hover:border-primary/30 active:bg-card/90",
         glow:
-          "bg-peach-gradient text-primary-foreground shadow-[0_0_25px_-5px_hsl(20_90%_65%/0.5)] hover:shadow-[0_0_35px_-5px_hsl(20_90%_65%/0.7)] active:shadow-[0_0_20px_-5px_hsl(20_90%_65%/0.4)]",
+          "blue-gradient text-white shadow-[0_0_25px_-5px_hsl(210_100%_55%/0.5)] hover:shadow-[0_0_35px_-5px_hsl(210_100%_55%/0.7)] active:shadow-[0_0_20px_-5px_hsl(210_100%_55%/0.4)]",
         icon:
           "bg-secondary/80 text-foreground hover:bg-primary/20 hover:text-primary active:bg-primary/30 rounded-full",
       },
