@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,9 @@ const Browse = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const { toast } = useToast();
+  
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const handleBack = () => {
     if (selectedGenre) {
@@ -106,11 +109,35 @@ const Browse = () => {
     }
   };
 
-  const handleShowMore = () => {
-    if (currentPage < totalPages && !isLoadingMore) {
+  // Infinite scroll with Intersection Observer
+  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && currentPage < totalPages && !isLoadingMore && !isLoading) {
       fetchContent(currentPage + 1, false);
     }
-  };
+  }, [currentPage, totalPages, isLoadingMore, isLoading, selectedCategory, selectedGenre, sortBy]);
+
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(handleObserver, {
+      root: null,
+      rootMargin: '200px',
+      threshold: 0,
+    });
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [handleObserver]);
 
   return (
     <div className="min-h-screen bg-background grain">
@@ -234,34 +261,33 @@ const Browse = () => {
                   <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
                     {content.map((item, index) => (
                       <div
-                        key={item.id}
+                        key={`${item.id}-${index}`}
                         className="animate-slide-up"
-                        style={{ animationDelay: `${Math.min(index, 20) * 30}ms` }}
+                        style={{ animationDelay: `${Math.min(index % 20, 20) * 30}ms` }}
                       >
                         <FilmCard film={item} size="md" />
                       </div>
                     ))}
                   </div>
                   
-                  {/* Show More Button */}
+                  {/* Infinite Scroll Trigger */}
                   {currentPage < totalPages && (
-                    <div className="flex justify-center mt-12">
-                      <Button
-                        variant="blue"
-                        size="lg"
-                        onClick={handleShowMore}
-                        disabled={isLoadingMore}
-                        className="px-12"
-                      >
-                        {isLoadingMore ? (
-                          <>
-                            <span className="animate-spin mr-2">⏳</span>
-                            Loading...
-                          </>
-                        ) : (
-                          `Show More (Page ${currentPage}/${totalPages})`
-                        )}
-                      </Button>
+                    <div 
+                      ref={loadMoreRef}
+                      className="flex justify-center items-center py-12"
+                    >
+                      {isLoadingMore && (
+                        <div className="flex items-center gap-3 text-muted-foreground">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                          <span>Loading more...</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {currentPage >= totalPages && content.length > 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">You've reached the end</p>
                     </div>
                   )}
                 </>
