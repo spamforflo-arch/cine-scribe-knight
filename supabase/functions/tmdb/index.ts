@@ -122,17 +122,17 @@ serve(async (req) => {
       sortParam = "vote_average.desc";
     }
 
-    // Remove language restriction to include all international content (Hindi, Korean, Tamil, Telugu, etc.)
+    // Include ALL languages - no language restriction, lower vote thresholds for international content
     if (category === "films") {
       genreId = genreMap[genre];
-      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${sortParam}&vote_count.gte=50&page=${page}&include_adult=false`;
+      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${sortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
     } else if (category === "tv") {
       genreId = tvGenreMap[genre];
       const tvSortParam = sortBy === "newest" ? "first_air_date.desc" : sortParam;
-      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${tvSortParam}&vote_count.gte=20&page=${page}&include_adult=false`;
+      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${tvSortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
     } else if (category === "anime") {
       genreId = genreMap[genre] || 16;
-      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&with_keywords=210024&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
+      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&with_keywords=210024&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
     }
 
     console.log(`Fetching from: ${endpoint.replace(TMDB_API_KEY, "***")}`);
