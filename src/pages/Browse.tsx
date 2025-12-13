@@ -46,12 +46,17 @@ const Browse = () => {
   const [sortBy, setSortBy] = useState("popularity");
   const [content, setContent] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const { toast } = useToast();
 
   const handleBack = () => {
     if (selectedGenre) {
       setSelectedGenre(null);
       setContent([]);
+      setCurrentPage(1);
+      setTotalPages(1);
     } else if (selectedCategory) {
       setSelectedCategory(null);
     }
@@ -59,22 +64,35 @@ const Browse = () => {
 
   useEffect(() => {
     if (selectedCategory && selectedGenre) {
-      fetchContent();
+      setContent([]);
+      setCurrentPage(1);
+      fetchContent(1, true);
     }
   }, [selectedCategory, selectedGenre, sortBy]);
 
-  const fetchContent = async () => {
+  const fetchContent = async (page: number, reset: boolean = false) => {
     if (!selectedCategory || !selectedGenre) return;
     
-    setIsLoading(true);
+    if (reset) {
+      setIsLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+    
     try {
       const { data, error } = await supabase.functions.invoke('tmdb', {
-        body: { category: selectedCategory, genre: selectedGenre, sortBy }
+        body: { category: selectedCategory, genre: selectedGenre, sortBy, page }
       });
 
       if (error) throw error;
       
-      setContent(data?.results || []);
+      if (reset) {
+        setContent(data?.results || []);
+      } else {
+        setContent(prev => [...prev, ...(data?.results || [])]);
+      }
+      setTotalPages(data?.totalPages || 1);
+      setCurrentPage(page);
     } catch (error) {
       console.error("Error fetching content:", error);
       toast({
@@ -84,6 +102,13 @@ const Browse = () => {
       });
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const handleShowMore = () => {
+    if (currentPage < totalPages && !isLoadingMore) {
+      fetchContent(currentPage + 1, false);
     }
   };
 
@@ -205,17 +230,41 @@ const Browse = () => {
                   ))}
                 </div>
               ) : content.length > 0 ? (
-                <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
-                  {content.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="animate-slide-up"
-                      style={{ animationDelay: `${index * 30}ms` }}
-                    >
-                      <FilmCard film={item} size="md" />
+                <>
+                  <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
+                    {content.map((item, index) => (
+                      <div
+                        key={item.id}
+                        className="animate-slide-up"
+                        style={{ animationDelay: `${Math.min(index, 20) * 30}ms` }}
+                      >
+                        <FilmCard film={item} size="md" />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Show More Button */}
+                  {currentPage < totalPages && (
+                    <div className="flex justify-center mt-12">
+                      <Button
+                        variant="blue"
+                        size="lg"
+                        onClick={handleShowMore}
+                        disabled={isLoadingMore}
+                        className="px-12"
+                      >
+                        {isLoadingMore ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Loading...
+                          </>
+                        ) : (
+                          `Show More (Page ${currentPage}/${totalPages})`
+                        )}
+                      </Button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               ) : (
                 <div className="text-center py-20">
                   <p className="text-muted-foreground">
