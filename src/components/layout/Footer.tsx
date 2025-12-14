@@ -15,13 +15,6 @@ export function Footer() {
             </span>
           </Link>
 
-          {/* Links */}
-          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/films" className="hover:text-primary transition-colors">Films</Link>
-            <Link to="/diary" className="hover:text-primary transition-colors">Diary</Link>
-            <Link to="/lists" className="hover:text-primary transition-colors">Lists</Link>
-          </nav>
-
           {/* Social */}
           <div className="flex items-center gap-2">
             <a 

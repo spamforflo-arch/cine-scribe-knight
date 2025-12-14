@@ -1,25 +1,58 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Star, Heart, Eye, Plus, X } from "lucide-react";
-import { Film } from "@/data/films";
 import { cn } from "@/lib/utils";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { 
+  isFilmWatched, 
+  isFilmLiked, 
+  isFilmInWatchlist,
+  addWatchedFilm,
+  removeWatchedFilm,
+  addLikedFilm,
+  removeLikedFilm,
+  addWatchlistFilm,
+  removeWatchlistFilm
+} from "@/lib/filmStorage";
+import { useToast } from "@/hooks/use-toast";
 
 interface FilmCardProps {
-  film: Film;
+  film: {
+    id: string;
+    tmdbId?: number;
+    title: string;
+    year: number;
+    poster: string | null;
+    rating: number;
+    mediaType?: 'movie' | 'tv' | 'anime';
+  };
   size?: "sm" | "md" | "lg";
   showRating?: boolean;
+  browseState?: { category: string; genre: string };
 }
 
-export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps) {
+export function FilmCard({ film, size = "md", showRating = true, browseState }: FilmCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isWatched, setIsWatched] = useState(false);
-  const [inWatchlist, setInWatchlist] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  // Extract tmdbId from id if not provided
+  const tmdbId = film.tmdbId || parseInt(film.id.replace('tmdb-', ''));
+  
+  const [isLiked, setIsLiked] = useState(() => isFilmLiked(tmdbId));
+  const [isWatched, setIsWatched] = useState(() => isFilmWatched(tmdbId));
+  const [inWatchlist, setInWatchlist] = useState(() => isFilmInWatchlist(tmdbId));
   
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Sync state with localStorage
+  useEffect(() => {
+    setIsLiked(isFilmLiked(tmdbId));
+    setIsWatched(isFilmWatched(tmdbId));
+    setInWatchlist(isFilmInWatchlist(tmdbId));
+  }, [tmdbId]);
 
   const sizeClasses = {
     sm: "w-[100px]",
@@ -39,7 +72,6 @@ export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps
     
     longPressTimer.current = setTimeout(() => {
       setShowMenu(true);
-      // Haptic feedback on mobile
       if ('vibrate' in navigator) {
         navigator.vibrate(50);
       }
@@ -53,19 +85,63 @@ export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps
     }
   }, []);
 
+  const filmData = {
+    id: film.id,
+    tmdbId,
+    title: film.title,
+    year: film.year,
+    poster: film.poster,
+    rating: film.rating,
+    mediaType: film.mediaType,
+  };
+
   const handleAction = (action: 'watched' | 'liked' | 'watchlist') => {
     switch (action) {
       case 'watched':
-        setIsWatched(!isWatched);
+        if (isWatched) {
+          removeWatchedFilm(tmdbId);
+          setIsWatched(false);
+          toast({ description: `Removed "${film.title}" from watched` });
+        } else {
+          addWatchedFilm(filmData);
+          setIsWatched(true);
+          toast({ description: `Added "${film.title}" to watched` });
+        }
         break;
       case 'liked':
-        setIsLiked(!isLiked);
+        if (isLiked) {
+          removeLikedFilm(tmdbId);
+          setIsLiked(false);
+          toast({ description: `Removed "${film.title}" from liked` });
+        } else {
+          addLikedFilm(filmData);
+          setIsLiked(true);
+          toast({ description: `Added "${film.title}" to liked` });
+        }
         break;
       case 'watchlist':
-        setInWatchlist(!inWatchlist);
+        if (inWatchlist) {
+          removeWatchlistFilm(tmdbId);
+          setInWatchlist(false);
+          toast({ description: `Removed "${film.title}" from watchlist` });
+        } else {
+          addWatchlistFilm(filmData);
+          setInWatchlist(true);
+          toast({ description: `Added "${film.title}" to watchlist` });
+        }
         break;
     }
     setShowMenu(false);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (showMenu) {
+      e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+    // Navigate with state to remember browse position
+    navigate(`/film/${film.id}`, { state: { browseState } });
   };
 
   return (
@@ -85,13 +161,9 @@ export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps
         onMouseUp={handleLongPressEnd}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <Link 
-          to={`/film/${film.id}`}
-          onClick={(e) => {
-            if (showMenu) {
-              e.preventDefault();
-            }
-          }}
+        <div 
+          onClick={handleClick}
+          className="cursor-pointer"
         >
           <div
             className={cn(
@@ -100,13 +172,19 @@ export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps
               isHovered && "scale-[1.03] shadow-xl"
             )}
           >
-            <img
-              src={film.poster}
-              alt={film.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              draggable={false}
-            />
+            {film.poster ? (
+              <img
+                src={film.poster}
+                alt={film.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                draggable={false}
+              />
+            ) : (
+              <div className="w-full h-full bg-secondary flex items-center justify-center">
+                <span className="text-muted-foreground text-xs">No Poster</span>
+              </div>
+            )}
             
             {/* Gradient Overlay on Hover */}
             <div
@@ -161,15 +239,15 @@ export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps
               </span>
             </div>
           </div>
-        </Link>
+        </div>
 
         {/* Title */}
         <div className="mt-2.5 space-y-0.5 px-0.5">
-          <Link to={`/film/${film.id}`}>
+          <div onClick={handleClick} className="cursor-pointer">
             <h3 className="font-semibold text-sm text-foreground truncate hover:text-primary transition-colors">
               {film.title}
             </h3>
-          </Link>
+          </div>
           <p className="text-xs text-muted-foreground">{film.year}</p>
         </div>
       </div>
@@ -191,11 +269,17 @@ export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps
           >
             {/* Film Preview */}
             <div className="relative mb-4">
-              <img
-                src={film.poster}
-                alt={film.title}
-                className="w-32 h-48 object-cover rounded-2xl shadow-2xl mx-auto"
-              />
+              {film.poster ? (
+                <img
+                  src={film.poster}
+                  alt={film.title}
+                  className="w-32 h-48 object-cover rounded-2xl shadow-2xl mx-auto"
+                />
+              ) : (
+                <div className="w-32 h-48 rounded-2xl bg-secondary flex items-center justify-center mx-auto">
+                  <span className="text-muted-foreground">No Poster</span>
+                </div>
+              )}
               <button
                 onClick={() => setShowMenu(false)}
                 className="absolute -top-2 -right-2 w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors click-scale"
@@ -204,8 +288,21 @@ export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps
               </button>
             </div>
 
-            {/* Actions */}
+            {/* Actions - Love, Watched, Watchlist */}
             <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => handleAction('liked')}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all click-bounce",
+                  isLiked 
+                    ? "bg-destructive text-destructive-foreground" 
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Heart className={cn("w-6 h-6", isLiked && "fill-current")} />
+                <span className="text-xs font-medium">Love</span>
+              </button>
+              
               <button
                 onClick={() => handleAction('watched')}
                 className={cn(
@@ -220,24 +317,11 @@ export function FilmCard({ film, size = "md", showRating = true }: FilmCardProps
               </button>
               
               <button
-                onClick={() => handleAction('liked')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all click-bounce",
-                  isLiked 
-                    ? "bg-destructive text-destructive-foreground" 
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Heart className={cn("w-6 h-6", isLiked && "fill-current")} />
-                <span className="text-xs font-medium">Like</span>
-              </button>
-              
-              <button
                 onClick={() => handleAction('watchlist')}
                 className={cn(
                   "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all click-bounce",
                   inWatchlist 
-                    ? "bg-peach-gradient text-primary-foreground" 
+                    ? "blue-gradient text-primary-foreground" 
                     : "bg-secondary text-muted-foreground hover:text-foreground"
                 )}
               >
