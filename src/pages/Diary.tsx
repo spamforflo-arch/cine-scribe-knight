@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Film, Eye, Bookmark, Plus, Trophy, GripVertical, X, Star } from "lucide-react";
+import { Film, Eye, Bookmark, Plus, Trophy, GripVertical, X, Star, Tv, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,14 @@ import {
   RankedFilm,
 } from "@/lib/filmStorage";
 
+type MediaCategory = "movies" | "tv" | "anime";
+
 const Diary = () => {
   const [activeTab, setActiveTab] = useState<"watched" | "watchlist" | "rankings">("watched");
   const [watchedFilms, setWatchedFilms] = useState<StoredFilm[]>([]);
   const [watchlistFilms, setWatchlistFilms] = useState<StoredFilm[]>([]);
   const [rankings, setRankingsState] = useState<Rankings>({ movies: [], tv: [], anime: [] });
-  const [rankingCategory, setRankingCategory] = useState<"movies" | "tv" | "anime">("movies");
+  const [rankingCategory, setRankingCategory] = useState<MediaCategory>("movies");
   const [showAddModal, setShowAddModal] = useState(false);
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
 
@@ -30,6 +32,16 @@ const Diary = () => {
     setWatchlistFilms(getWatchlistFilms());
     setRankingsState(getRankings());
   }, [activeTab]);
+
+  // Separate films by media type
+  const separateByType = (films: StoredFilm[]) => ({
+    movies: films.filter(f => !f.mediaType || f.mediaType === 'movie'),
+    tv: films.filter(f => f.mediaType === 'tv'),
+    anime: films.filter(f => f.mediaType === 'anime'),
+  });
+
+  const watchedByType = separateByType(watchedFilms);
+  const watchlistByType = separateByType(watchlistFilms);
 
   const handleDragStart = (index: number) => {
     setDraggedItem(index);
@@ -87,78 +99,100 @@ const Diary = () => {
     setRankings(newRankings);
   };
 
-  // Filter watched films that have ratings for ranking selection
-  const ratedFilms = watchedFilms.filter(f => f.userRating && f.userRating > 0);
+  // Get films for current ranking category
+  const getRatedFilmsForCategory = () => {
+    if (rankingCategory === 'movies') {
+      return watchedByType.movies.filter(f => f.userRating && f.userRating > 0);
+    } else if (rankingCategory === 'tv') {
+      return watchedByType.tv.filter(f => f.userRating && f.userRating > 0);
+    } else {
+      return watchedByType.anime.filter(f => f.userRating && f.userRating > 0);
+    }
+  };
 
-  const EmptyState = ({ type }: { type: "watched" | "watchlist" | "rankings" }) => (
-    <div className="text-center py-20 animate-fade-in">
-      <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center mx-auto mb-5">
+  const ratedFilms = getRatedFilmsForCategory();
+
+  const EmptyState = ({ type, category }: { type: "watched" | "watchlist" | "rankings"; category?: string }) => (
+    <div className="text-center py-12 animate-fade-in">
+      <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
         {type === "watched" ? (
-          <Eye className="w-10 h-10 text-muted-foreground" />
+          <Eye className="w-8 h-8 text-muted-foreground" />
         ) : type === "watchlist" ? (
-          <Bookmark className="w-10 h-10 text-muted-foreground" />
+          <Bookmark className="w-8 h-8 text-muted-foreground" />
         ) : (
-          <Trophy className="w-10 h-10 text-muted-foreground" />
+          <Trophy className="w-8 h-8 text-muted-foreground" />
         )}
       </div>
-      <h2 className="font-display text-2xl font-semibold text-foreground mb-2">
+      <h3 className="font-display text-lg font-semibold text-foreground mb-1">
         {type === "watched" 
-          ? "No films watched yet" 
+          ? `No ${category || 'content'} watched yet` 
           : type === "watchlist"
-          ? "Your watchlist is empty"
-          : "No rankings yet"}
-      </h2>
-      <p className="text-muted-foreground mb-6">
-        {type === "watched" 
-          ? "Start logging films you've watched to track your cinema journey." 
-          : type === "watchlist"
-          ? "Add films you want to watch later."
-          : "Rate some films first, then add them to your rankings."}
+          ? `No ${category || 'content'} in watchlist`
+          : `No ${category || 'content'} ranked yet`}
+      </h3>
+      <p className="text-sm text-muted-foreground">
+        {type === "rankings" ? "Rate some content first, then add them here." : "Start exploring to add content."}
       </p>
-      <Link to="/browse">
-        <Button variant="blue">
-          <Plus className="w-4 h-4 mr-2" />
-          Browse Films
-        </Button>
-      </Link>
     </div>
   );
 
-  const FilmGrid = ({ films }: { films: StoredFilm[] }) => (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-      {films.map((film, index) => (
-        <Link
-          key={film.id}
-          to={`/film/tmdb-${film.tmdbId}`}
-          className="group animate-fade-in click-scale"
-          style={{ animationDelay: `${index * 30}ms` }}
-        >
-          <div className="relative aspect-[2/3] rounded-xl overflow-hidden film-card-shadow bg-secondary">
-            {film.poster ? (
-              <img
-                src={film.poster}
-                alt={film.title}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Film className="w-8 h-8 text-muted-foreground" />
+  const FilmGrid = ({ films, label }: { films: StoredFilm[]; label: string }) => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        {label === "Movies" && <Film className="w-5 h-5 text-primary" />}
+        {label === "TV Shows" && <Tv className="w-5 h-5 text-primary" />}
+        {label === "Anime" && <Sparkles className="w-5 h-5 text-primary" />}
+        <h3 className="font-display text-lg font-semibold text-foreground">{label}</h3>
+        <span className="text-sm text-muted-foreground">({films.length})</span>
+      </div>
+      {films.length > 0 ? (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+          {films.map((film, index) => (
+            <Link
+              key={film.id}
+              to={`/film/tmdb-${film.tmdbId}`}
+              state={{ mediaType: film.mediaType || 'movie' }}
+              className="group animate-fade-in click-scale"
+              style={{ animationDelay: `${index * 30}ms` }}
+            >
+              <div className="relative aspect-[2/3] rounded-xl overflow-hidden film-card-shadow bg-secondary">
+                {film.poster ? (
+                  <img
+                    src={film.poster}
+                    alt={film.title}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Film className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                )}
+                {film.userRating && (
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1">
+                    <Star className="w-3 h-3 fill-primary text-primary" />
+                    <span className="text-xs font-bold">{film.userRating}</span>
+                  </div>
+                )}
               </div>
-            )}
-            {film.userRating && (
-              <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1">
-                <Star className="w-3 h-3 fill-primary text-primary" />
-                <span className="text-xs font-bold">{film.userRating}</span>
-              </div>
-            )}
-          </div>
-          <p className="mt-2 text-xs font-medium text-foreground truncate group-hover:text-primary transition-colors">
-            {film.title}
-          </p>
-          <p className="text-[10px] text-muted-foreground">{film.year}</p>
-        </Link>
-      ))}
+              <p className="mt-2 text-xs font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                {film.title}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{film.year}</p>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <EmptyState type={activeTab} category={label.toLowerCase()} />
+      )}
+    </div>
+  );
+
+  const ContentColumns = ({ byType }: { byType: { movies: StoredFilm[]; tv: StoredFilm[]; anime: StoredFilm[] } }) => (
+    <div className="space-y-10">
+      <FilmGrid films={byType.movies} label="Movies" />
+      <FilmGrid films={byType.tv} label="TV Shows" />
+      <FilmGrid films={byType.anime} label="Anime" />
     </div>
   );
 
@@ -172,7 +206,11 @@ const Diary = () => {
             variant={rankingCategory === cat ? "blue" : "glass"}
             size="sm"
             onClick={() => setRankingCategory(cat)}
+            className="gap-2"
           >
+            {cat === 'movies' && <Film className="w-4 h-4" />}
+            {cat === 'tv' && <Tv className="w-4 h-4" />}
+            {cat === 'anime' && <Sparkles className="w-4 h-4" />}
             {cat === 'movies' ? 'Movies' : cat === 'tv' ? 'TV Shows' : 'Anime'}
           </Button>
         ))}
@@ -186,7 +224,7 @@ const Diary = () => {
           onClick={() => setShowAddModal(true)}
         >
           <Plus className="w-4 h-4" />
-          Add to Top 15
+          Add to Top 15 {rankingCategory === 'movies' ? 'Movies' : rankingCategory === 'tv' ? 'TV Shows' : 'Anime'}
         </Button>
       )}
 
@@ -218,7 +256,11 @@ const Diary = () => {
                 </span>
               </div>
               
-              <Link to={`/film/tmdb-${film.tmdbId}`} className="flex items-center gap-3 flex-1">
+              <Link 
+                to={`/film/tmdb-${film.tmdbId}`} 
+                state={{ mediaType: film.mediaType || 'movie' }}
+                className="flex items-center gap-3 flex-1"
+              >
                 {film.poster ? (
                   <img
                     src={film.poster}
@@ -255,7 +297,7 @@ const Diary = () => {
           ))}
         </div>
       ) : (
-        <EmptyState type="rankings" />
+        <EmptyState type="rankings" category={rankingCategory === 'movies' ? 'movies' : rankingCategory === 'tv' ? 'TV shows' : 'anime'} />
       )}
 
       {/* Add Modal */}
@@ -270,7 +312,7 @@ const Diary = () => {
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-display text-xl font-semibold text-foreground">
-                Add to Rankings
+                Add {rankingCategory === 'movies' ? 'Movie' : rankingCategory === 'tv' ? 'TV Show' : 'Anime'} to Rankings
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -283,7 +325,7 @@ const Diary = () => {
             {ratedFilms.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground mb-4">
-                  Select from your rated films:
+                  Select from your rated {rankingCategory === 'movies' ? 'movies' : rankingCategory === 'tv' ? 'TV shows' : 'anime'}:
                 </p>
                 {ratedFilms
                   .filter(f => !rankings[rankingCategory].some(r => r.tmdbId === f.tmdbId))
@@ -316,15 +358,20 @@ const Diary = () => {
                       </div>
                     </button>
                   ))}
+                {ratedFilms.filter(f => !rankings[rankingCategory].some(r => r.tmdbId === f.tmdbId)).length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">
+                    All your rated {rankingCategory === 'movies' ? 'movies' : rankingCategory === 'tv' ? 'TV shows' : 'anime'} are already in the rankings.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">
-                  Rate some films first to add them to your rankings.
+                  Rate some {rankingCategory === 'movies' ? 'movies' : rankingCategory === 'tv' ? 'TV shows' : 'anime'} first to add them to your rankings.
                 </p>
                 <Link to="/browse">
                   <Button variant="blue" className="mt-4">
-                    Browse Films
+                    Browse Content
                   </Button>
                 </Link>
               </div>
@@ -334,6 +381,8 @@ const Diary = () => {
       )}
     </div>
   );
+
+  const hasAnyContent = watchedFilms.length > 0 || watchlistFilms.length > 0;
 
   return (
     <div className="min-h-screen bg-background grain">
@@ -380,17 +429,49 @@ const Diary = () => {
 
             <TabsContent value="watched">
               {watchedFilms.length > 0 ? (
-                <FilmGrid films={watchedFilms} />
+                <ContentColumns byType={watchedByType} />
               ) : (
-                <EmptyState type="watched" />
+                <div className="text-center py-20 animate-fade-in">
+                  <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center mx-auto mb-5">
+                    <Eye className="w-10 h-10 text-muted-foreground" />
+                  </div>
+                  <h2 className="font-display text-2xl font-semibold text-foreground mb-2">
+                    No content watched yet
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Start logging films, TV shows, and anime you've watched.
+                  </p>
+                  <Link to="/browse">
+                    <Button variant="blue">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Browse Content
+                    </Button>
+                  </Link>
+                </div>
               )}
             </TabsContent>
 
             <TabsContent value="watchlist">
               {watchlistFilms.length > 0 ? (
-                <FilmGrid films={watchlistFilms} />
+                <ContentColumns byType={watchlistByType} />
               ) : (
-                <EmptyState type="watchlist" />
+                <div className="text-center py-20 animate-fade-in">
+                  <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center mx-auto mb-5">
+                    <Bookmark className="w-10 h-10 text-muted-foreground" />
+                  </div>
+                  <h2 className="font-display text-2xl font-semibold text-foreground mb-2">
+                    Your watchlist is empty
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Add films, TV shows, and anime you want to watch later.
+                  </p>
+                  <Link to="/browse">
+                    <Button variant="blue">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Browse Content
+                    </Button>
+                  </Link>
+                </div>
               )}
             </TabsContent>
 

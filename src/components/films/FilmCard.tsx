@@ -140,8 +140,13 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
       return;
     }
     e.preventDefault();
-    // Navigate with state to remember browse position
-    navigate(`/film/${film.id}`, { state: { browseState } });
+    // Navigate with state to remember browse position and media type
+    navigate(`/film/${film.id}`, { 
+      state: { 
+        browseState,
+        mediaType: film.mediaType || 'movie'
+      } 
+    });
   };
 
   return (

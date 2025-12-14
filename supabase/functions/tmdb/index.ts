@@ -161,6 +161,7 @@ serve(async (req) => {
         reviewCount: movie.vote_count,
         trailer: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
         trailerKey: trailer?.key || null,
+        mediaType: 'movie',
         similar: filteredSimilar.slice(0, 8).map((item: any) => ({
           id: `tmdb-${item.id}`,
           tmdbId: item.id,
@@ -172,6 +173,69 @@ serve(async (req) => {
       };
 
       console.log(`Returning movie detail for: ${result.title}`);
+      return new Response(JSON.stringify({ result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Handle TV show detail request
+    if (action === "getTVDetail" && movieId) {
+      console.log(`Fetching TV detail for ID: ${movieId}`);
+      
+      const [tvRes, creditsRes, videosRes, similarRes] = await Promise.all([
+        fetch(`${TMDB_BASE_URL}/tv/${movieId}?api_key=${TMDB_API_KEY}`),
+        fetch(`${TMDB_BASE_URL}/tv/${movieId}/credits?api_key=${TMDB_API_KEY}`),
+        fetch(`${TMDB_BASE_URL}/tv/${movieId}/videos?api_key=${TMDB_API_KEY}`),
+        fetch(`${TMDB_BASE_URL}/tv/${movieId}/similar?api_key=${TMDB_API_KEY}&page=1`),
+      ]);
+
+      if (!tvRes.ok) {
+        throw new Error(`TV show not found: ${tvRes.status}`);
+      }
+
+      const [tv, credits, videos, similar] = await Promise.all([
+        tvRes.json(),
+        creditsRes.json(),
+        videosRes.json(),
+        similarRes.json(),
+      ]);
+
+      const trailer = videos.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube");
+      const creator = tv.created_by?.[0]?.name || "";
+      
+      const filteredSimilar = filterContent(similar.results || []);
+      
+      const result = {
+        id: `tmdb-${tv.id}`,
+        tmdbId: tv.id,
+        title: tv.name,
+        year: new Date(tv.first_air_date || "").getFullYear() || 0,
+        poster: tv.poster_path ? `https://image.tmdb.org/t/p/w500${tv.poster_path}` : null,
+        backdrop: tv.backdrop_path ? `https://image.tmdb.org/t/p/original${tv.backdrop_path}` : null,
+        rating: Math.round((tv.vote_average / 2) * 10) / 10,
+        synopsis: tv.overview,
+        genres: tv.genres?.map((g: any) => g.name) || [],
+        director: creator,
+        cast: credits.cast?.slice(0, 10).map((c: any) => ({ name: c.name, character: c.character, profile: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null })) || [],
+        runtime: tv.episode_run_time?.[0] || 0,
+        reviewCount: tv.vote_count,
+        trailer: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
+        trailerKey: trailer?.key || null,
+        mediaType: 'tv',
+        seasons: tv.number_of_seasons || 0,
+        episodes: tv.number_of_episodes || 0,
+        similar: filteredSimilar.slice(0, 8).map((item: any) => ({
+          id: `tmdb-${item.id}`,
+          tmdbId: item.id,
+          title: item.name,
+          year: new Date(item.first_air_date || "").getFullYear() || 0,
+          poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+          rating: Math.round((item.vote_average / 2) * 10) / 10,
+          mediaType: 'tv',
+        })).filter((item: any) => item.poster) || [],
+      };
+
+      console.log(`Returning TV detail for: ${result.title}`);
       return new Response(JSON.stringify({ result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
