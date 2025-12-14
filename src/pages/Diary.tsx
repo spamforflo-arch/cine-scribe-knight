@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Film, Eye, Bookmark, Plus, Trophy, GripVertical, X, Star, Tv, Sparkles } from "lucide-react";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
+import { Film, Eye, Bookmark, Plus, Trophy, GripVertical, X, Star, Tv, Sparkles, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -388,10 +386,16 @@ const Diary = () => {
 
   return (
     <div className="min-h-screen bg-background grain">
-      <Navbar />
-      
-      <main className="pt-24 pb-28 md:pb-16">
+      <main className="pt-8 pb-28 md:pb-16">
         <div className="container mx-auto px-4">
+          {/* Home button */}
+          <Link to="/" className="inline-block mb-6">
+            <Button variant="glass" size="sm" className="gap-2">
+              <Home className="w-4 h-4" />
+              Home
+            </Button>
+          </Link>
+          
           <div className="space-y-4 mb-8 animate-fade-in">
             <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground">
               My Collection
@@ -467,8 +471,6 @@ const Diary = () => {
           </Tabs>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

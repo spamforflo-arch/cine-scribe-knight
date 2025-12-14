@@ -1,5 +1,3 @@
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Compass, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -7,8 +5,6 @@ import { Link } from "react-router-dom";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background grain flex flex-col">
-      <Navbar />
-      
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center gap-8 animate-fade-in">
@@ -42,8 +38,6 @@ const Index = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
