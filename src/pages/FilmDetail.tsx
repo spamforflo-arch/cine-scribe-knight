@@ -1,10 +1,9 @@
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { Heart, Eye, Plus, Clock, Star, ChevronLeft, Play, Loader2 } from "lucide-react";
+import { Heart, Eye, Plus, Clock, Star, ChevronLeft, Play, Loader2, Tv } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/films/StarRating";
-import { FilmCard } from "@/components/films/FilmCard";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +35,7 @@ interface SimilarFilm {
   year: number;
   poster: string | null;
   rating: number;
+  mediaType?: 'movie' | 'tv' | 'anime';
 }
 
 interface MovieDetail {
@@ -55,6 +55,9 @@ interface MovieDetail {
   trailer: string | null;
   trailerKey: string | null;
   similar: SimilarFilm[];
+  mediaType?: 'movie' | 'tv' | 'anime';
+  seasons?: number;
+  episodes?: number;
 }
 
 const FilmDetail = () => {
@@ -66,6 +69,9 @@ const FilmDetail = () => {
   const [film, setFilm] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get media type from navigation state
+  const passedMediaType = location.state?.mediaType as 'movie' | 'tv' | 'anime' | undefined;
   
   // Extract tmdbId
   const tmdbId = id?.startsWith('tmdb-') ? parseInt(id.replace('tmdb-', '')) : parseInt(id || '0');
@@ -93,7 +99,7 @@ const FilmDetail = () => {
   }, [tmdbId]);
 
   useEffect(() => {
-    const fetchMovieDetail = async () => {
+    const fetchDetail = async () => {
       if (!id) return;
       
       setLoading(true);
@@ -102,26 +108,35 @@ const FilmDetail = () => {
       try {
         const tmdbIdStr = id.startsWith('tmdb-') ? id.replace('tmdb-', '') : id;
         
+        // Determine which API to call based on media type
+        const isTV = passedMediaType === 'tv' || passedMediaType === 'anime';
+        const action = isTV ? 'getTVDetail' : 'getMovieDetail';
+        
         const { data, error: fetchError } = await supabase.functions.invoke('tmdb', {
-          body: { action: 'getMovieDetail', movieId: tmdbIdStr }
+          body: { action, movieId: tmdbIdStr }
         });
 
         if (fetchError) throw fetchError;
         if (data?.result) {
-          setFilm(data.result);
+          // Set mediaType based on passed type or returned type
+          const resultWithType = {
+            ...data.result,
+            mediaType: passedMediaType || data.result.mediaType || 'movie'
+          };
+          setFilm(resultWithType);
         } else {
-          setError('Movie not found');
+          setError('Content not found');
         }
       } catch (err) {
-        console.error('Error fetching movie:', err);
-        setError('Failed to load movie details');
+        console.error('Error fetching detail:', err);
+        setError('Failed to load details');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMovieDetail();
-  }, [id]);
+    fetchDetail();
+  }, [id, passedMediaType]);
 
   const handleBack = () => {
     const browseState = location.state?.browseState;
@@ -132,6 +147,8 @@ const FilmDetail = () => {
     }
   };
 
+  const currentMediaType = film?.mediaType || passedMediaType || 'movie';
+
   const filmData = film ? {
     id: film.id,
     tmdbId: film.tmdbId,
@@ -139,6 +156,7 @@ const FilmDetail = () => {
     year: film.year,
     poster: film.poster,
     rating: film.rating,
+    mediaType: currentMediaType,
   } : null;
 
   const handleWatchedToggle = () => {
@@ -205,7 +223,7 @@ const FilmDetail = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-display text-foreground mb-4">{error || 'Film not found'}</h1>
+          <h1 className="text-2xl font-display text-foreground mb-4">{error || 'Content not found'}</h1>
           <Button variant="blue" onClick={() => navigate('/browse')}>Back to Browse</Button>
         </div>
       </div>
@@ -265,6 +283,13 @@ const FilmDetail = () => {
           {/* Details */}
           <div className="flex-1 space-y-6 animate-slide-up" style={{ animationDelay: "100ms" }}>
             <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                {currentMediaType !== 'movie' && (
+                  <span className="px-2.5 py-1 bg-primary/20 text-primary text-xs font-semibold rounded-lg uppercase">
+                    {currentMediaType === 'anime' ? 'Anime' : 'TV Series'}
+                  </span>
+                )}
+              </div>
               <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground">
                 {film.title}
               </h1>
@@ -273,15 +298,24 @@ const FilmDetail = () => {
                 {film.director && (
                   <>
                     <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-                    <span>{film.director}</span>
+                    <span>{currentMediaType !== 'movie' ? 'Created by' : 'Directed by'} {film.director}</span>
                   </>
                 )}
-                {film.runtime > 0 && (
+                {film.runtime > 0 && currentMediaType === 'movie' && (
                   <>
                     <span className="w-1 h-1 rounded-full bg-muted-foreground" />
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
                       {Math.floor(film.runtime / 60)}h {film.runtime % 60}m
+                    </span>
+                  </>
+                )}
+                {film.seasons && film.seasons > 0 && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+                    <span className="flex items-center gap-1">
+                      <Tv className="w-4 h-4" />
+                      {film.seasons} Season{film.seasons > 1 ? 's' : ''}
                     </span>
                   </>
                 )}
@@ -418,15 +452,19 @@ const FilmDetail = () => {
           </div>
         )}
 
-        {/* Similar Films */}
+        {/* Similar Content */}
         {film.similar.length > 0 && (
           <section className="mt-16">
             <h2 className="font-display text-2xl font-bold text-foreground mb-6">
-              Similar Films
+              Similar {currentMediaType === 'movie' ? 'Films' : currentMediaType === 'anime' ? 'Anime' : 'Shows'}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {film.similar.map((similarFilm) => (
-                <Link key={similarFilm.id} to={`/film/${similarFilm.id}`}>
+                <Link 
+                  key={similarFilm.id} 
+                  to={`/film/${similarFilm.id}`}
+                  state={{ mediaType: currentMediaType, browseState: location.state?.browseState }}
+                >
                   <div className="group cursor-pointer">
                     <div className="rounded-xl overflow-hidden film-card-shadow transition-transform group-hover:scale-105">
                       <img

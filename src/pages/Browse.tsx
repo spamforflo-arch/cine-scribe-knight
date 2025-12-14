@@ -40,6 +40,7 @@ type ContentItem = {
   cast: string[];
   runtime: number;
   reviewCount: number;
+  mediaType?: 'movie' | 'tv' | 'anime';
 };
 
 const Browse = () => {
@@ -274,7 +275,10 @@ const Browse = () => {
                         style={{ animationDelay: `${Math.min(index % 20, 20) * 30}ms` }}
                       >
                         <FilmCard 
-                          film={item} 
+                          film={{
+                            ...item,
+                            mediaType: item.mediaType || (selectedCategory === 'films' ? 'movie' : selectedCategory as 'tv' | 'anime'),
+                          }} 
                           size="md" 
                           browseState={browseState}
                         />
