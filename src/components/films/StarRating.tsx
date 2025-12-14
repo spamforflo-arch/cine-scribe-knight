@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 
 interface StarRatingProps {
   rating?: number;
@@ -18,6 +18,7 @@ export function StarRating({
   onRatingChange,
 }: StarRatingProps) {
   const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const sizeClasses = {
     sm: "w-4 h-4",
@@ -33,11 +34,36 @@ export function StarRating({
 
   const displayRating = hoverRating ?? rating;
 
+  // Handle mouse/touch position to calculate half-star ratings
+  const calculateRating = useCallback((e: React.MouseEvent, starIndex: number) => {
+    const starElement = (e.target as HTMLElement).closest('button');
+    if (!starElement) return starIndex + 1;
+    
+    const rect = starElement.getBoundingClientRect();
+    const relativeX = e.clientX - rect.left;
+    const isHalf = relativeX < rect.width / 2;
+    
+    return isHalf ? starIndex + 0.5 : starIndex + 1;
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent, starIndex: number) => {
+    if (!interactive) return;
+    const newRating = calculateRating(e, starIndex);
+    setHoverRating(newRating);
+  }, [interactive, calculateRating]);
+
+  const handleClick = useCallback((e: React.MouseEvent, starIndex: number) => {
+    if (!interactive) return;
+    const newRating = calculateRating(e, starIndex);
+    onRatingChange?.(newRating);
+  }, [interactive, calculateRating, onRatingChange]);
+
   return (
-    <div className={cn("flex items-center", gapClasses[size])}>
+    <div ref={containerRef} className={cn("flex items-center", gapClasses[size])}>
       {Array.from({ length: maxRating }).map((_, index) => {
         const starValue = index + 1;
-        const isFilled = starValue <= displayRating;
+        const isFull = starValue <= displayRating;
+        const isHalf = !isFull && starValue - 0.5 <= displayRating && starValue > displayRating;
 
         return (
           <button
@@ -49,22 +75,38 @@ export function StarRating({
               interactive && "hover:scale-125 cursor-pointer",
               !interactive && "cursor-default"
             )}
-            onMouseEnter={() => interactive && setHoverRating(starValue)}
+            onMouseMove={(e) => handleMouseMove(e, index)}
             onMouseLeave={() => interactive && setHoverRating(null)}
-            onClick={() => interactive && onRatingChange?.(starValue)}
+            onClick={(e) => handleClick(e, index)}
           >
+            {/* Background star (empty) */}
             <Star
               className={cn(
                 sizeClasses[size],
-                "transition-all duration-200",
-                isFilled
-                  ? "fill-primary text-primary drop-shadow-[0_0_8px_hsl(20_90%_65%/0.5)]"
-                  : "text-muted-foreground/40"
+                "transition-all duration-200 text-muted-foreground/40"
               )}
             />
+            {/* Filled portion */}
+            <div 
+              className="absolute inset-0 overflow-hidden transition-all duration-200"
+              style={{ width: isFull ? '100%' : isHalf ? '50%' : '0%' }}
+            >
+              <Star
+                className={cn(
+                  sizeClasses[size],
+                  "fill-primary text-primary drop-shadow-[0_0_8px_hsl(20_90%_65%/0.5)]"
+                )}
+              />
+            </div>
           </button>
         );
       })}
+      {/* Rating display */}
+      {interactive && displayRating > 0 && (
+        <span className="ml-2 text-sm font-medium text-foreground min-w-[2rem]">
+          {displayRating.toFixed(1)}
+        </span>
+      )}
     </div>
   );
 }

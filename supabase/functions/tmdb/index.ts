@@ -264,9 +264,19 @@ serve(async (req) => {
       const tvSortParam = sortBy === "newest" ? "first_air_date.desc" : sortParam;
       endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${tvSortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
     } else if (category === "anime") {
-      genreId = genreMap[genre] || 16;
-      // Use with_keywords for anime keyword (210024) combined with genre
-      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&with_keywords=210024&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
+      // For anime, use Animation genre (16) with origin_country=JP for Japanese animation
+      // If user selected Animation genre, just use Animation + Japan
+      // Otherwise combine their genre with Animation + Japan
+      const animeGenreId = genreMap[genre];
+      const tvAnimeGenreId = tvGenreMap[genre] || 16;
+      
+      // Use TV shows from Japan with Animation genre
+      if (genre === "Animation") {
+        endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&with_origin_country=JP&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
+      } else {
+        // For other genres, search for Japanese animation with that genre
+        endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16,${tvAnimeGenreId}&with_origin_country=JP&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
+      }
     }
 
     console.log(`Fetching from: ${endpoint.replace(TMDB_API_KEY, "***")}`);
