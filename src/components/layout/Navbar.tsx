@@ -2,12 +2,9 @@ import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Navigation links removed per user request
-
 export function Navbar() {
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
+    <header className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="container mx-auto px-4">
         <nav className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -22,7 +19,6 @@ export function Navbar() {
             </span>
           </Link>
 
-
           {/* Search */}
           <Link to="/search">
             <Button variant="icon" size="icon" className="text-muted-foreground hover:text-foreground">
@@ -31,7 +27,6 @@ export function Navbar() {
           </Link>
         </nav>
       </div>
-
     </header>
   );
 }

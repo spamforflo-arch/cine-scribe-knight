@@ -39,6 +39,38 @@ const tvGenreMap: Record<string, number> = {
   "Thriller": 9648,
 };
 
+// Keywords to filter out adult/porn content
+const blockedKeywords = [
+  'erotic', 'erotica', 'softcore', 'adult film', 'pornographic', 
+  'sex film', 'sexploitation', 'nudity', 'adult entertainment'
+];
+
+// Filter results to remove potentially inappropriate content
+function filterContent(results: any[]): any[] {
+  return results.filter((item: any) => {
+    // Filter out adult content
+    if (item.adult === true) return false;
+    
+    // Filter out items with no poster (often low quality or inappropriate)
+    if (!item.poster_path) return false;
+    
+    // Filter out items with suspicious titles
+    const title = (item.title || item.name || '').toLowerCase();
+    const overview = (item.overview || '').toLowerCase();
+    
+    for (const keyword of blockedKeywords) {
+      if (title.includes(keyword) || overview.includes(keyword)) {
+        return false;
+      }
+    }
+    
+    // Require some minimum popularity/vote count to filter out obscure content
+    if (item.vote_count < 5) return false;
+    
+    return true;
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -51,7 +83,41 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, category, genre, sortBy = "popularity", movieId, page = 1 } = body;
+    const { action, category, genre, sortBy = "popularity", movieId, page = 1, query } = body;
+    
+    // Handle search request
+    if (action === "search" && query) {
+      console.log(`Searching for: ${query}`);
+      
+      const searchRes = await fetch(
+        `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&page=1`
+      );
+      
+      if (!searchRes.ok) {
+        throw new Error(`Search failed: ${searchRes.status}`);
+      }
+      
+      const searchData = await searchRes.json();
+      
+      const results = filterContent(searchData.results || [])
+        .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
+        .slice(0, 20)
+        .map((item: any) => ({
+          id: `tmdb-${item.id}`,
+          tmdbId: item.id,
+          title: item.title || item.name,
+          year: new Date(item.release_date || item.first_air_date || "").getFullYear() || 0,
+          poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+          rating: Math.round((item.vote_average / 2) * 10) / 10,
+          mediaType: item.media_type,
+        }))
+        .filter((item: any) => item.year > 0);
+      
+      console.log(`Found ${results.length} results`);
+      return new Response(JSON.stringify({ results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     
     // Handle movie detail request
     if (action === "getMovieDetail" && movieId) {
@@ -77,6 +143,8 @@ serve(async (req) => {
 
       const trailer = videos.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube");
       
+      const filteredSimilar = filterContent(similar.results || []);
+      
       const result = {
         id: `tmdb-${movie.id}`,
         tmdbId: movie.id,
@@ -93,7 +161,7 @@ serve(async (req) => {
         reviewCount: movie.vote_count,
         trailer: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
         trailerKey: trailer?.key || null,
-        similar: similar.results?.slice(0, 8).map((item: any) => ({
+        similar: filteredSimilar.slice(0, 8).map((item: any) => ({
           id: `tmdb-${item.id}`,
           tmdbId: item.id,
           title: item.title,
@@ -122,17 +190,19 @@ serve(async (req) => {
       sortParam = "vote_average.desc";
     }
 
-    // Include ALL languages - no language restriction, lower vote thresholds for international content
+    // Use with_genres to get ONLY that specific genre, and add certification filters
     if (category === "films") {
       genreId = genreMap[genre];
-      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${sortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
+      // Use with_genres for exact genre matching
+      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&without_genres=99&sort_by=${sortParam}&vote_count.gte=20&page=${page}&include_adult=false`;
     } else if (category === "tv") {
       genreId = tvGenreMap[genre];
       const tvSortParam = sortBy === "newest" ? "first_air_date.desc" : sortParam;
-      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${tvSortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
+      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${tvSortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
     } else if (category === "anime") {
       genreId = genreMap[genre] || 16;
-      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&with_keywords=210024&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
+      // Use with_keywords for anime keyword (210024) combined with genre
+      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&with_keywords=210024&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
     }
 
     console.log(`Fetching from: ${endpoint.replace(TMDB_API_KEY, "***")}`);
@@ -147,7 +217,10 @@ serve(async (req) => {
 
     const data = await response.json();
     
-    const results = data.results?.map((item: any) => ({
+    // Filter and map results
+    const filteredResults = filterContent(data.results || []);
+    
+    const results = filteredResults.map((item: any) => ({
       id: `tmdb-${item.id}`,
       tmdbId: item.id,
       title: item.title || item.name,
@@ -161,7 +234,8 @@ serve(async (req) => {
       cast: [],
       runtime: 0,
       reviewCount: item.vote_count,
-    })).filter((item: any) => item.poster && item.year > 0) || [];
+      mediaType: category === 'films' ? 'movie' : category === 'anime' ? 'anime' : 'tv',
+    })).filter((item: any) => item.year > 0) || [];
 
     console.log(`Returning ${results.length} results, page ${page}, total pages: ${data.total_pages}`);
 

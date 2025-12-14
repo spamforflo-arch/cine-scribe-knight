@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { Heart, Eye, Plus, Clock, Star, ChevronLeft, Play, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -8,6 +8,20 @@ import { FilmCard } from "@/components/films/FilmCard";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  isFilmWatched,
+  isFilmLiked,
+  isFilmInWatchlist,
+  addWatchedFilm,
+  removeWatchedFilm,
+  addLikedFilm,
+  removeLikedFilm,
+  addWatchlistFilm,
+  removeWatchlistFilm,
+  updateWatchedFilmRating,
+  getWatchedFilms,
+} from "@/lib/filmStorage";
 
 interface CastMember {
   name: string;
@@ -45,15 +59,38 @@ interface MovieDetail {
 
 const FilmDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+  
   const [film, setFilm] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [isLiked, setIsLiked] = useState(false);
-  const [isWatched, setIsWatched] = useState(false);
-  const [inWatchlist, setInWatchlist] = useState(false);
+  // Extract tmdbId
+  const tmdbId = id?.startsWith('tmdb-') ? parseInt(id.replace('tmdb-', '')) : parseInt(id || '0');
+  
+  const [isLiked, setIsLiked] = useState(() => isFilmLiked(tmdbId));
+  const [isWatched, setIsWatched] = useState(() => isFilmWatched(tmdbId));
+  const [inWatchlist, setInWatchlist] = useState(() => isFilmInWatchlist(tmdbId));
   const [userRating, setUserRating] = useState<number>(0);
   const [showTrailer, setShowTrailer] = useState(false);
+
+  // Get saved rating
+  useEffect(() => {
+    const watchedFilms = getWatchedFilms();
+    const savedFilm = watchedFilms.find(f => f.tmdbId === tmdbId);
+    if (savedFilm?.userRating) {
+      setUserRating(savedFilm.userRating);
+    }
+  }, [tmdbId]);
+
+  // Sync state with localStorage
+  useEffect(() => {
+    setIsLiked(isFilmLiked(tmdbId));
+    setIsWatched(isFilmWatched(tmdbId));
+    setInWatchlist(isFilmInWatchlist(tmdbId));
+  }, [tmdbId]);
 
   useEffect(() => {
     const fetchMovieDetail = async () => {
@@ -63,11 +100,10 @@ const FilmDetail = () => {
       setError(null);
       
       try {
-        // Extract TMDB ID from the id parameter (format: tmdb-123456)
-        const tmdbId = id.startsWith('tmdb-') ? id.replace('tmdb-', '') : id;
+        const tmdbIdStr = id.startsWith('tmdb-') ? id.replace('tmdb-', '') : id;
         
         const { data, error: fetchError } = await supabase.functions.invoke('tmdb', {
-          body: { action: 'getMovieDetail', movieId: tmdbId }
+          body: { action: 'getMovieDetail', movieId: tmdbIdStr }
         });
 
         if (fetchError) throw fetchError;
@@ -87,6 +123,76 @@ const FilmDetail = () => {
     fetchMovieDetail();
   }, [id]);
 
+  const handleBack = () => {
+    const browseState = location.state?.browseState;
+    if (browseState) {
+      navigate('/browse', { state: browseState });
+    } else {
+      navigate('/browse');
+    }
+  };
+
+  const filmData = film ? {
+    id: film.id,
+    tmdbId: film.tmdbId,
+    title: film.title,
+    year: film.year,
+    poster: film.poster,
+    rating: film.rating,
+  } : null;
+
+  const handleWatchedToggle = () => {
+    if (!filmData) return;
+    if (isWatched) {
+      removeWatchedFilm(filmData.tmdbId);
+      setIsWatched(false);
+      toast({ description: `Removed "${film?.title}" from watched` });
+    } else {
+      addWatchedFilm(filmData);
+      setIsWatched(true);
+      toast({ description: `Added "${film?.title}" to watched` });
+    }
+  };
+
+  const handleLikedToggle = () => {
+    if (!filmData) return;
+    if (isLiked) {
+      removeLikedFilm(filmData.tmdbId);
+      setIsLiked(false);
+      toast({ description: `Removed "${film?.title}" from liked` });
+    } else {
+      addLikedFilm(filmData);
+      setIsLiked(true);
+      toast({ description: `Added "${film?.title}" to liked` });
+    }
+  };
+
+  const handleWatchlistToggle = () => {
+    if (!filmData) return;
+    if (inWatchlist) {
+      removeWatchlistFilm(filmData.tmdbId);
+      setInWatchlist(false);
+      toast({ description: `Removed "${film?.title}" from watchlist` });
+    } else {
+      addWatchlistFilm(filmData);
+      setInWatchlist(true);
+      toast({ description: `Added "${film?.title}" to watchlist` });
+    }
+  };
+
+  const handleRatingChange = (rating: number) => {
+    setUserRating(rating);
+    if (filmData && isWatched) {
+      updateWatchedFilmRating(filmData.tmdbId, rating);
+      toast({ description: `Rated "${film?.title}" ${rating} stars` });
+    } else if (filmData && !isWatched) {
+      // Auto-add to watched when rating
+      addWatchedFilm({ ...filmData, userRating: rating });
+      setIsWatched(true);
+      toast({ description: `Added "${film?.title}" to watched with ${rating} star rating` });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -100,9 +206,7 @@ const FilmDetail = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-display text-foreground mb-4">{error || 'Film not found'}</h1>
-          <Link to="/browse">
-            <Button variant="blue">Back to Browse</Button>
-          </Link>
+          <Button variant="blue" onClick={() => navigate('/browse')}>Back to Browse</Button>
         </div>
       </div>
     );
@@ -127,15 +231,15 @@ const FilmDetail = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent" />
         
         {/* Back Button */}
-        <Link 
-          to="/browse" 
+        <button 
+          onClick={handleBack}
           className="absolute top-24 left-4 md:left-8 z-10"
         >
           <Button variant="glass" size="sm" className="gap-2 click-scale">
             <ChevronLeft className="w-4 h-4" />
             Back
           </Button>
-        </Link>
+        </button>
       </section>
 
       {/* Film Info */}
@@ -224,7 +328,7 @@ const FilmDetail = () => {
                 variant={isWatched ? "blue" : "glass"} 
                 size="lg" 
                 className="gap-2 click-bounce"
-                onClick={() => setIsWatched(!isWatched)}
+                onClick={handleWatchedToggle}
               >
                 <Eye className="w-5 h-5" />
                 {isWatched ? "Watched" : "Mark Watched"}
@@ -233,16 +337,16 @@ const FilmDetail = () => {
                 variant={isLiked ? "default" : "glass"} 
                 size="lg" 
                 className={cn("gap-2 click-bounce", isLiked && "bg-destructive hover:bg-destructive/90")}
-                onClick={() => setIsLiked(!isLiked)}
+                onClick={handleLikedToggle}
               >
                 <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
-                {isLiked ? "Liked" : "Like"}
+                {isLiked ? "Loved" : "Love"}
               </Button>
               <Button 
                 variant={inWatchlist ? "blue" : "glass"} 
                 size="lg" 
                 className="gap-2 click-bounce"
-                onClick={() => setInWatchlist(!inWatchlist)}
+                onClick={handleWatchlistToggle}
               >
                 <Plus className="w-5 h-5" />
                 Watchlist
@@ -256,7 +360,7 @@ const FilmDetail = () => {
                 rating={userRating} 
                 interactive 
                 size="lg"
-                onRatingChange={setUserRating}
+                onRatingChange={handleRatingChange}
               />
             </div>
 

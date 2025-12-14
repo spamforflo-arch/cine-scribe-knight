@@ -7,6 +7,7 @@ import { FilmCard } from "@/components/films/FilmCard";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "react-router-dom";
 
 const categories = [
   { id: "films", label: "Films", icon: Film },
@@ -28,6 +29,7 @@ const sortOptions = [
 
 type ContentItem = {
   id: string;
+  tmdbId?: number;
   title: string;
   year: number;
   poster: string;
@@ -41,8 +43,11 @@ type ContentItem = {
 };
 
 const Browse = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const location = useLocation();
+  const initialState = location.state as { category?: string; genre?: string } | null;
+  
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialState?.category || null);
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(initialState?.genre || null);
   const [sortBy, setSortBy] = useState("popularity");
   const [content, setContent] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -138,6 +143,9 @@ const Browse = () => {
       }
     };
   }, [handleObserver]);
+
+  // Current browse state for back navigation
+  const browseState = selectedCategory && selectedGenre ? { category: selectedCategory, genre: selectedGenre } : undefined;
 
   return (
     <div className="min-h-screen bg-background grain">
@@ -265,7 +273,11 @@ const Browse = () => {
                         className="animate-slide-up"
                         style={{ animationDelay: `${Math.min(index % 20, 20) * 30}ms` }}
                       >
-                        <FilmCard film={item} size="md" />
+                        <FilmCard 
+                          film={item} 
+                          size="md" 
+                          browseState={browseState}
+                        />
                       </div>
                     ))}
                   </div>
