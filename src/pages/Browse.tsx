@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2 } from "lucide-react";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
+import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilmCard } from "@/components/films/FilmCard";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 
 const categories = [
   { id: "films", label: "Films", icon: Film },
@@ -150,20 +148,27 @@ const Browse = () => {
 
   return (
     <div className="min-h-screen bg-background grain">
-      <Navbar />
-      
-      <main className="pt-24 pb-16">
+      <main className="pt-8 pb-16">
         <div className="container mx-auto px-4">
-          {/* Back Button */}
-          {(selectedCategory || selectedGenre) && (
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 click-scale transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              Back
-            </button>
-          )}
+          {/* Navigation */}
+          <div className="flex items-center gap-4 mb-8">
+            {(selectedCategory || selectedGenre) ? (
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground click-scale transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                Back
+              </button>
+            ) : (
+              <Link to="/">
+                <Button variant="glass" size="sm" className="gap-2">
+                  <Home className="w-4 h-4" />
+                  Home
+                </Button>
+              </Link>
+            )}
+          </div>
 
           {/* Category Selection */}
           {!selectedCategory && (
@@ -318,8 +323,6 @@ const Browse = () => {
           )}
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

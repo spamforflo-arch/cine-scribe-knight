@@ -1,7 +1,5 @@
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { Heart, Eye, Plus, Clock, Star, ChevronLeft, Play, Loader2, Tv } from "lucide-react";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/films/StarRating";
 import { useState, useEffect } from "react";
@@ -232,7 +230,6 @@ const FilmDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
 
       {/* Hero Backdrop */}
       <section className="relative h-[55vh] overflow-hidden">
@@ -482,8 +479,6 @@ const FilmDetail = () => {
           </section>
         )}
       </section>
-
-      <Footer />
     </div>
   );
 };
