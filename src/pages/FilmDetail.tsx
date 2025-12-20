@@ -139,8 +139,6 @@ const FilmDetail = () => {
 
   const handleBack = () => {
     const browseState = location.state?.browseState;
-    // Save scroll position before going back
-    sessionStorage.setItem('browse_scroll_position', String(window.scrollY));
     if (browseState) {
       navigate('/browse', { state: browseState });
     } else {

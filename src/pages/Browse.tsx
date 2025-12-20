@@ -5,7 +5,7 @@ import { FilmCard } from "@/components/films/FilmCard";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
 
 const categories = [
@@ -48,9 +48,8 @@ const BROWSE_STATE_KEY = 'browse_state';
 
 const Browse = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const initialState = location.state as { category?: string; genre?: string; scrollPosition?: number } | null;
-  
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialState?.category || null);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(initialState?.genre || null);
   const [sortBy, setSortBy] = useState("popularity");
@@ -60,60 +59,75 @@ const Browse = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const { toast } = useToast();
-  
+
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const hasRestoredScroll = useRef(false);
+  const restoredKeyRef = useRef<string | null>(null);
 
-  // Save scroll position before navigating away
+  const saveBrowseSnapshot = useCallback(() => {
+    if (!selectedCategory || !selectedGenre) return;
+
+    sessionStorage.setItem(SCROLL_POSITION_KEY, String(window.scrollY));
+    sessionStorage.setItem(
+      BROWSE_STATE_KEY,
+      JSON.stringify({
+        category: selectedCategory,
+        genre: selectedGenre,
+        sortBy,
+        content,
+        currentPage,
+        totalPages,
+      })
+    );
+  }, [selectedCategory, selectedGenre, sortBy, content, currentPage, totalPages]);
+
+  // Save snapshot whenever we leave /browse (so back from a detail page restores exactly)
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (selectedCategory && selectedGenre) {
-        sessionStorage.setItem(SCROLL_POSITION_KEY, String(window.scrollY));
-        sessionStorage.setItem(BROWSE_STATE_KEY, JSON.stringify({
-          category: selectedCategory,
-          genre: selectedGenre,
-          content: content,
-          currentPage: currentPage,
-          totalPages: totalPages
-        }));
-      }
+    return () => {
+      saveBrowseSnapshot();
     };
+  }, [saveBrowseSnapshot]);
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [selectedCategory, selectedGenre, content, currentPage, totalPages]);
-
-  // Restore state and scroll position when coming back
+  // Restore state + scroll position when coming back (only if same category+genre+sort)
   useEffect(() => {
-    if (initialState?.category && initialState?.genre && !hasRestoredScroll.current) {
-      const savedState = sessionStorage.getItem(BROWSE_STATE_KEY);
-      const savedScrollPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
-      
-      if (savedState) {
-        try {
-          const parsed = JSON.parse(savedState);
-          if (parsed.category === initialState.category && parsed.genre === initialState.genre && parsed.content?.length > 0) {
-            setContent(parsed.content);
-            setCurrentPage(parsed.currentPage || 1);
-            setTotalPages(parsed.totalPages || 1);
-            
-            // Restore scroll after content is loaded
-            if (savedScrollPosition) {
-              setTimeout(() => {
-                window.scrollTo(0, parseInt(savedScrollPosition));
-              }, 100);
-            }
-            hasRestoredScroll.current = true;
-            return;
-          }
-        } catch (e) {
-          console.error('Error parsing saved browse state:', e);
+    if (!initialState?.category || !initialState?.genre) return;
+
+    const savedStateRaw = sessionStorage.getItem(BROWSE_STATE_KEY);
+    const savedScrollPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
+
+    if (!savedStateRaw) return;
+
+    try {
+      const parsed = JSON.parse(savedStateRaw) as {
+        category?: string;
+        genre?: string;
+        sortBy?: string;
+        content?: ContentItem[];
+        currentPage?: number;
+        totalPages?: number;
+      };
+
+      const sameSelection =
+        parsed.category === initialState.category &&
+        parsed.genre === initialState.genre &&
+        (parsed.sortBy || "popularity") === sortBy;
+
+      if (sameSelection && Array.isArray(parsed.content) && parsed.content.length > 0) {
+        setContent(parsed.content);
+        setCurrentPage(parsed.currentPage || 1);
+        setTotalPages(parsed.totalPages || 1);
+
+        restoredKeyRef.current = `${parsed.category}|${parsed.genre}|${parsed.sortBy || "popularity"}`;
+
+        if (savedScrollPosition) {
+          const y = Number(savedScrollPosition);
+          requestAnimationFrame(() => window.scrollTo(0, y));
         }
       }
+    } catch (e) {
+      console.error("Error parsing saved browse state:", e);
     }
-  }, [initialState]);
+  }, [initialState, sortBy]);
 
   const handleBack = () => {
     if (selectedGenre) {
@@ -121,6 +135,7 @@ const Browse = () => {
       setContent([]);
       setCurrentPage(1);
       setTotalPages(1);
+      restoredKeyRef.current = null;
       sessionStorage.removeItem(SCROLL_POSITION_KEY);
       sessionStorage.removeItem(BROWSE_STATE_KEY);
     } else if (selectedCategory) {
@@ -129,11 +144,14 @@ const Browse = () => {
   };
 
   useEffect(() => {
-    if (selectedCategory && selectedGenre && !hasRestoredScroll.current) {
-      setContent([]);
-      setCurrentPage(1);
-      fetchContent(1, true);
-    }
+    if (!selectedCategory || !selectedGenre) return;
+
+    const key = `${selectedCategory}|${selectedGenre}|${sortBy}`;
+    if (restoredKeyRef.current === key) return;
+
+    setContent([]);
+    setCurrentPage(1);
+    fetchContent(1, true);
   }, [selectedCategory, selectedGenre, sortBy]);
 
   const fetchContent = async (page: number, reset: boolean = false) => {
