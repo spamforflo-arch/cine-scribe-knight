@@ -272,43 +272,45 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Film Preview */}
-            <div className="relative mb-6">
-              {film.poster ? (
-                <img
-                  src={film.poster}
-                  alt={film.title}
-                  className="w-36 h-52 object-cover rounded-2xl shadow-2xl mx-auto"
-                />
-              ) : (
-                <div className="w-36 h-52 rounded-2xl bg-secondary flex items-center justify-center mx-auto">
-                  <span className="text-muted-foreground">No Poster</span>
-                </div>
-              )}
-              
-              {/* Circular Action Buttons - Floating around the poster */}
+            {/* Film Preview with floating buttons */}
+            <div className="relative mb-6 flex items-center justify-center">
+              {/* Left Button - Watched */}
               <button
                 onClick={() => handleAction('watched')}
                 className={cn(
-                  "absolute -left-8 top-1/3 z-10 w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-xl",
-                  "animate-scale-in",
+                  "relative z-20 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl mr-3",
+                  "animate-bounce-in animate-pulse-subtle",
                   isWatched 
                     ? "bg-primary text-primary-foreground" 
-                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border border-border"
+                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border-2 border-border"
                 )}
                 style={{ animationDelay: '50ms' }}
               >
                 <Eye className="w-6 h-6" />
               </button>
+
+              {/* Poster */}
+              {film.poster ? (
+                <img
+                  src={film.poster}
+                  alt={film.title}
+                  className="w-36 h-52 object-cover rounded-2xl shadow-2xl relative z-10"
+                />
+              ) : (
+                <div className="w-36 h-52 rounded-2xl bg-secondary flex items-center justify-center relative z-10">
+                  <span className="text-muted-foreground">No Poster</span>
+                </div>
+              )}
               
+              {/* Right Button - Watchlist */}
               <button
                 onClick={() => handleAction('watchlist')}
                 className={cn(
-                  "absolute -right-8 top-1/3 z-10 w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-xl",
-                  "animate-scale-in",
+                  "relative z-20 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl ml-3",
+                  "animate-bounce-in animate-pulse-subtle",
                   inWatchlist 
-                    ? "blue-gradient text-white" 
-                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border border-border"
+                    ? "bg-blue-gradient text-white" 
+                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border-2 border-border"
                 )}
                 style={{ animationDelay: '100ms' }}
               >
