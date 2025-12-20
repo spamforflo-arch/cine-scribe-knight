@@ -1,5 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
-import { Star, Heart, Eye, BookOpen, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Star, Heart, Eye, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { 
@@ -14,6 +14,7 @@ import {
   removeWatchlistFilm
 } from "@/lib/filmStorage";
 import { useToast } from "@/hooks/use-toast";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 interface FilmCardProps {
   film: {
@@ -70,10 +71,12 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
       });
     }
     
-    longPressTimer.current = setTimeout(() => {
+    longPressTimer.current = setTimeout(async () => {
       setShowMenu(true);
-      if ('vibrate' in navigator) {
-        navigator.vibrate(50);
+      try {
+        await Haptics.impact({ style: ImpactStyle.Medium });
+      } catch {
+        if ('vibrate' in navigator) navigator.vibrate(50);
       }
     }, 500);
   }, []);
@@ -95,9 +98,11 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
     mediaType: film.mediaType,
   };
 
-  const triggerHaptic = () => {
-    if ('vibrate' in navigator) {
-      navigator.vibrate(30);
+  const triggerHaptic = async () => {
+    try {
+      await Haptics.impact({ style: ImpactStyle.Light });
+    } catch {
+      if ('vibrate' in navigator) navigator.vibrate(30);
     }
   };
 
@@ -314,22 +319,22 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
                     aria-hidden="true"
                   />
 
-                  {/* Action buttons ON the poster */}
-                  <div className="absolute inset-0 flex items-center justify-between px-3">
+                  {/* Action buttons ON the poster - centered together */}
+                  <div className="absolute inset-0 flex items-center justify-center gap-6">
                     <button
                       type="button"
                       aria-label={isWatched ? "Remove from watched" : "Add to watched"}
                       onClick={() => handleAction('watched')}
                       className={cn(
-                        "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
-                        "animate-bounce-in animate-pulse-subtle",
+                        "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl",
+                        "animate-bounce-in",
                         isWatched
                           ? "bg-primary text-primary-foreground"
-                          : "bg-background/80 text-foreground border-2 border-border backdrop-blur-md"
+                          : "bg-transparent text-foreground border-2 border-foreground/80"
                       )}
                       style={{ animationDelay: '50ms' }}
                     >
-                      <Eye className="w-7 h-7" />
+                      <Eye className="w-6 h-6" />
                     </button>
 
                     <button
@@ -337,15 +342,15 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
                       aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
                       onClick={() => handleAction('watchlist')}
                       className={cn(
-                        "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
-                        "animate-bounce-in animate-pulse-subtle",
+                        "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl",
+                        "animate-bounce-in",
                         inWatchlist
                           ? "bg-primary text-primary-foreground"
-                          : "bg-background/80 text-foreground border-2 border-border backdrop-blur-md"
+                          : "bg-transparent text-foreground border-2 border-foreground/80"
                       )}
                       style={{ animationDelay: '100ms' }}
                     >
-                      <BookOpen className="w-7 h-7" />
+                      <BookOpen className="w-6 h-6" />
                     </button>
                   </div>
                 </div>
