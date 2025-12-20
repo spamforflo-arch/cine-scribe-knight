@@ -111,6 +111,10 @@ export default {
           "0%, 100%": { boxShadow: "0 0 20px -5px hsl(210 100% 55% / 0.4)" },
           "50%": { boxShadow: "0 0 35px -5px hsl(210 100% 55% / 0.6)" },
         },
+        "pulse-subtle": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.08)", opacity: "0.9" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -120,6 +124,7 @@ export default {
         wiggle: "wiggle 0.5s ease-in-out",
         float: "float 3s ease-in-out infinite",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "pulse-subtle": "pulse-subtle 1.5s ease-in-out infinite",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
