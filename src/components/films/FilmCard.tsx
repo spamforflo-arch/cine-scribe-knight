@@ -274,66 +274,96 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pop-in"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Film Preview with floating buttons */}
-            <div className="relative flex items-center justify-center gap-4">
-              {/* Left Button - Watched */}
-              <button
-                onClick={() => handleAction('watched')}
-                className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
-                  "animate-bounce-in animate-pulse-subtle",
-                  isWatched 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border-2 border-border"
-                )}
-                style={{ animationDelay: '50ms' }}
-              >
-                <Eye className="w-7 h-7" />
-              </button>
+            {/* Poster-focused action menu (buttons sit on poster, blurred poster behind) */}
+            <div className="relative w-[320px] max-w-[92vw] rounded-3xl overflow-hidden shadow-2xl">
+              {film.poster ? (
+                <img
+                  src={film.poster}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full object-cover scale-110 blur-2xl"
+                  draggable={false}
+                />
+              ) : (
+                <div className="absolute inset-0 bg-secondary" aria-hidden="true" />
+              )}
+              <div className="absolute inset-0 bg-background/60" aria-hidden="true" />
 
-              {/* Poster */}
-              <div className="relative">
-                {film.poster ? (
-                  <img
-                    src={film.poster}
-                    alt={film.title}
-                    className="w-40 h-56 object-cover rounded-2xl shadow-2xl"
+              <div className="relative p-5">
+                <div className="relative mx-auto w-44 sm:w-48 aspect-[2/3] rounded-2xl overflow-hidden film-card-shadow">
+                  {film.poster ? (
+                    <img
+                      src={film.poster}
+                      alt={film.title}
+                      className="h-full w-full object-cover"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-secondary flex items-center justify-center">
+                      <span className="text-muted-foreground">No Poster</span>
+                    </div>
+                  )}
+
+                  {/* Blur layer on the poster to make actions readable */}
+                  <div
+                    className="absolute inset-0 bg-background/30 backdrop-blur-md"
+                    aria-hidden="true"
                   />
-                ) : (
-                  <div className="w-40 h-56 rounded-2xl bg-secondary flex items-center justify-center">
-                    <span className="text-muted-foreground">No Poster</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Right Button - Watchlist */}
-              <button
-                onClick={() => handleAction('watchlist')}
-                className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
-                  "animate-bounce-in animate-pulse-subtle",
-                  inWatchlist 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border-2 border-border"
-                )}
-                style={{ animationDelay: '100ms' }}
-              >
-                <BookOpen className="w-7 h-7" />
-              </button>
-            </div>
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-background/55 via-transparent to-transparent"
+                    aria-hidden="true"
+                  />
 
-            {/* Film Title */}
-            <p className="text-center font-display text-lg font-semibold text-foreground max-w-[280px] truncate mt-5 mx-auto">
-              {film.title}
-            </p>
-            <p className="text-center text-sm text-muted-foreground mt-1">
-              {film.year}
-            </p>
-            
-            {/* Tap to close hint */}
-            <p className="text-center text-xs text-muted-foreground/60 mt-4">
-              Tap anywhere to close
-            </p>
+                  {/* Action buttons ON the poster */}
+                  <div className="absolute inset-0 flex items-center justify-between px-3">
+                    <button
+                      type="button"
+                      aria-label={isWatched ? "Remove from watched" : "Add to watched"}
+                      onClick={() => handleAction('watched')}
+                      className={cn(
+                        "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
+                        "animate-bounce-in animate-pulse-subtle",
+                        isWatched
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background/80 text-foreground border-2 border-border backdrop-blur-md"
+                      )}
+                      style={{ animationDelay: '50ms' }}
+                    >
+                      <Eye className="w-7 h-7" />
+                    </button>
+
+                    <button
+                      type="button"
+                      aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
+                      onClick={() => handleAction('watchlist')}
+                      className={cn(
+                        "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
+                        "animate-bounce-in animate-pulse-subtle",
+                        inWatchlist
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background/80 text-foreground border-2 border-border backdrop-blur-md"
+                      )}
+                      style={{ animationDelay: '100ms' }}
+                    >
+                      <BookOpen className="w-7 h-7" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Film Title */}
+                <p className="text-center font-display text-lg font-semibold text-foreground max-w-[280px] truncate mt-5 mx-auto">
+                  {film.title}
+                </p>
+                <p className="text-center text-sm text-muted-foreground mt-1">
+                  {film.year}
+                </p>
+
+                {/* Tap to close hint */}
+                <p className="text-center text-xs text-muted-foreground/60 mt-4">
+                  Tap anywhere to close
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
