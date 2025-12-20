@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Compass, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background grain flex flex-col">
-      <main className="flex-1 flex items-center justify-center">
+      <AppHeader />
+      <main className="flex-1 flex items-center justify-center pt-14">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center gap-8 animate-fade-in">
             {/* Logo */}
@@ -17,7 +19,7 @@ const Index = () => {
             </h1>
 
             <p className="text-muted-foreground text-center max-w-md">
-              Your personal entertainment diary
+              2025© made with love for cinema
             </p>
 
             {/* Action Buttons */}

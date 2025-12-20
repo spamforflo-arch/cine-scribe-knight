@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Search as SearchIcon, X, Film, Star, Loader2, Home } from "lucide-react";
+import { Search as SearchIcon, X, Film, Star, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 type SearchResult = {
   id: string;
@@ -54,15 +54,9 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background grain">
-      <main className="pt-8 pb-28 md:pb-16">
+      <AppHeader />
+      <main className="pt-20 pb-28 md:pb-16">
         <div className="container mx-auto px-4 max-w-2xl">
-          {/* Home button */}
-          <Link to="/">
-            <Button variant="glass" size="sm" className="gap-2 mb-6">
-              <Home className="w-4 h-4" />
-              Home
-            </Button>
-          </Link>
           {/* Search Header */}
           <div className="space-y-5 mb-8 animate-fade-in">
             <h1 className="font-display text-4xl font-bold text-foreground text-center">

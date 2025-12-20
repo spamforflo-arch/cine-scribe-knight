@@ -19,6 +19,7 @@ import {
   updateWatchedFilmRating,
   getWatchedFilms,
 } from "@/lib/filmStorage";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 interface CastMember {
   name: string;
@@ -230,9 +231,10 @@ const FilmDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <AppHeader />
 
       {/* Hero Backdrop */}
-      <section className="relative h-[55vh] overflow-hidden">
+      <section className="relative h-[55vh] overflow-hidden pt-14">
         {film.backdrop ? (
           <img
             src={film.backdrop}
@@ -248,7 +250,7 @@ const FilmDetail = () => {
         {/* Back Button */}
         <button 
           onClick={handleBack}
-          className="absolute top-24 left-4 md:left-8 z-10"
+          className="absolute top-20 left-4 md:left-8 z-10"
         >
           <Button variant="glass" size="sm" className="gap-2 click-scale">
             <ChevronLeft className="w-4 h-4" />

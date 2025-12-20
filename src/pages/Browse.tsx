@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2, Home } from "lucide-react";
+import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilmCard } from "@/components/films/FilmCard";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { AppHeader } from "@/components/layout/AppHeader";
 
 const categories = [
   { id: "films", label: "Films", icon: Film },
@@ -148,11 +149,12 @@ const Browse = () => {
 
   return (
     <div className="min-h-screen bg-background grain">
-      <main className="pt-8 pb-16">
+      <AppHeader />
+      <main className="pt-20 pb-16">
         <div className="container mx-auto px-4">
           {/* Navigation */}
-          <div className="flex items-center gap-4 mb-8">
-            {(selectedCategory || selectedGenre) ? (
+          {(selectedCategory || selectedGenre) && (
+            <div className="flex items-center gap-4 mb-8">
               <button
                 onClick={handleBack}
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground click-scale transition-colors"
@@ -160,15 +162,8 @@ const Browse = () => {
                 <ChevronLeft className="w-5 h-5" />
                 Back
               </button>
-            ) : (
-              <Link to="/">
-                <Button variant="glass" size="sm" className="gap-2">
-                  <Home className="w-4 h-4" />
-                  Home
-                </Button>
-              </Link>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Category Selection */}
           {!selectedCategory && (
