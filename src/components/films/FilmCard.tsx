@@ -95,7 +95,14 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
     mediaType: film.mediaType,
   };
 
+  const triggerHaptic = () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(30);
+    }
+  };
+
   const handleAction = (action: 'watched' | 'liked' | 'watchlist') => {
+    triggerHaptic();
     switch (action) {
       case 'watched':
         if (isWatched) {
@@ -260,25 +267,20 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
       {/* Long Press Menu Overlay */}
       {showMenu && (
         <div 
-          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm animate-fade-in"
           onClick={() => setShowMenu(false)}
         >
           <div 
-            className="absolute animate-pop-in"
-            style={{
-              left: `${menuPosition.x}px`,
-              top: `${menuPosition.y}px`,
-              transform: 'translate(-50%, -50%)',
-            }}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pop-in"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Film Preview with floating buttons */}
-            <div className="relative mb-6 flex items-center justify-center">
+            <div className="relative flex items-center justify-center gap-4">
               {/* Left Button - Watched */}
               <button
                 onClick={() => handleAction('watched')}
                 className={cn(
-                  "relative z-20 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl mr-3",
+                  "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
                   "animate-bounce-in animate-pulse-subtle",
                   isWatched 
                     ? "bg-primary text-primary-foreground" 
@@ -286,40 +288,42 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
                 )}
                 style={{ animationDelay: '50ms' }}
               >
-                <Eye className="w-6 h-6" />
+                <Eye className="w-7 h-7" />
               </button>
 
               {/* Poster */}
-              {film.poster ? (
-                <img
-                  src={film.poster}
-                  alt={film.title}
-                  className="w-36 h-52 object-cover rounded-2xl shadow-2xl relative z-10"
-                />
-              ) : (
-                <div className="w-36 h-52 rounded-2xl bg-secondary flex items-center justify-center relative z-10">
-                  <span className="text-muted-foreground">No Poster</span>
-                </div>
-              )}
+              <div className="relative">
+                {film.poster ? (
+                  <img
+                    src={film.poster}
+                    alt={film.title}
+                    className="w-40 h-56 object-cover rounded-2xl shadow-2xl"
+                  />
+                ) : (
+                  <div className="w-40 h-56 rounded-2xl bg-secondary flex items-center justify-center">
+                    <span className="text-muted-foreground">No Poster</span>
+                  </div>
+                )}
+              </div>
               
               {/* Right Button - Watchlist */}
               <button
                 onClick={() => handleAction('watchlist')}
                 className={cn(
-                  "relative z-20 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl ml-3",
+                  "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl",
                   "animate-bounce-in animate-pulse-subtle",
                   inWatchlist 
-                    ? "bg-blue-gradient text-white" 
+                    ? "bg-primary text-primary-foreground" 
                     : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border-2 border-border"
                 )}
                 style={{ animationDelay: '100ms' }}
               >
-                <BookOpen className="w-6 h-6" />
+                <BookOpen className="w-7 h-7" />
               </button>
             </div>
 
             {/* Film Title */}
-            <p className="text-center font-display text-lg font-semibold text-foreground max-w-[200px] truncate">
+            <p className="text-center font-display text-lg font-semibold text-foreground max-w-[280px] truncate mt-5 mx-auto">
               {film.title}
             </p>
             <p className="text-center text-sm text-muted-foreground mt-1">
