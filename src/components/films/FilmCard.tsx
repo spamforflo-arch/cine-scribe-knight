@@ -286,15 +286,15 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
                 </div>
               )}
               
-              {/* Circular Action Buttons - Floating around the poster like in the reference */}
+              {/* Circular Action Buttons - Floating around the poster */}
               <button
                 onClick={() => handleAction('watched')}
                 className={cn(
-                  "absolute -left-6 top-1/3 w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg",
+                  "absolute -left-8 top-1/3 z-10 w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-xl",
                   "animate-scale-in",
                   isWatched 
                     ? "bg-primary text-primary-foreground" 
-                    : "bg-secondary/90 backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border border-border"
                 )}
                 style={{ animationDelay: '50ms' }}
               >
@@ -304,11 +304,11 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
               <button
                 onClick={() => handleAction('watchlist')}
                 className={cn(
-                  "absolute -right-6 top-1/3 w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg",
+                  "absolute -right-8 top-1/3 z-10 w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-xl",
                   "animate-scale-in",
                   inWatchlist 
                     ? "blue-gradient text-white" 
-                    : "bg-secondary/90 backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary border border-border"
                 )}
                 style={{ animationDelay: '100ms' }}
               >
