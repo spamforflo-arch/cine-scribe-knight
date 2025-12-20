@@ -19,7 +19,7 @@ const Index = () => {
             </h1>
 
             <p className="text-muted-foreground text-center max-w-md">
-              2025© made with love for cinema
+              Made With Love for Cinema &lt;3
             </p>
 
             {/* Action Buttons */}

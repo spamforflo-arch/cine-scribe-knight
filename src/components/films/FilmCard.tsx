@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Star, Heart, Eye, Plus, X } from "lucide-react";
+import { Star, Heart, Eye, BookOpen, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { 
@@ -213,7 +213,7 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
               )}
               {inWatchlist && (
                 <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center animate-pop-in">
-                  <Plus className="w-3.5 h-3.5 text-accent-foreground" />
+                  <BookOpen className="w-3.5 h-3.5 text-accent-foreground" />
                 </div>
               )}
             </div>
@@ -273,71 +273,60 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
             onClick={(e) => e.stopPropagation()}
           >
             {/* Film Preview */}
-            <div className="relative mb-4">
+            <div className="relative mb-6">
               {film.poster ? (
                 <img
                   src={film.poster}
                   alt={film.title}
-                  className="w-32 h-48 object-cover rounded-2xl shadow-2xl mx-auto"
+                  className="w-36 h-52 object-cover rounded-2xl shadow-2xl mx-auto"
                 />
               ) : (
-                <div className="w-32 h-48 rounded-2xl bg-secondary flex items-center justify-center mx-auto">
+                <div className="w-36 h-52 rounded-2xl bg-secondary flex items-center justify-center mx-auto">
                   <span className="text-muted-foreground">No Poster</span>
                 </div>
               )}
-              <button
-                onClick={() => setShowMenu(false)}
-                className="absolute -top-2 -right-2 w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors click-scale"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Actions - Love, Watched, Watchlist */}
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => handleAction('liked')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all click-bounce",
-                  isLiked 
-                    ? "bg-destructive text-destructive-foreground" 
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Heart className={cn("w-6 h-6", isLiked && "fill-current")} />
-                <span className="text-xs font-medium">Love</span>
-              </button>
               
+              {/* Circular Action Buttons - Floating around the poster like in the reference */}
               <button
                 onClick={() => handleAction('watched')}
                 className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all click-bounce",
+                  "absolute -left-6 top-1/3 w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg",
+                  "animate-scale-in",
                   isWatched 
                     ? "bg-primary text-primary-foreground" 
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                    : "bg-secondary/90 backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
+                style={{ animationDelay: '50ms' }}
               >
                 <Eye className="w-6 h-6" />
-                <span className="text-xs font-medium">Watched</span>
               </button>
               
               <button
                 onClick={() => handleAction('watchlist')}
                 className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all click-bounce",
+                  "absolute -right-6 top-1/3 w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg",
+                  "animate-scale-in",
                   inWatchlist 
-                    ? "blue-gradient text-primary-foreground" 
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                    ? "blue-gradient text-white" 
+                    : "bg-secondary/90 backdrop-blur-sm text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
+                style={{ animationDelay: '100ms' }}
               >
-                <Plus className="w-6 h-6" />
-                <span className="text-xs font-medium">Watchlist</span>
+                <BookOpen className="w-6 h-6" />
               </button>
             </div>
 
             {/* Film Title */}
-            <p className="text-center mt-4 font-display text-lg font-semibold text-foreground">
+            <p className="text-center font-display text-lg font-semibold text-foreground max-w-[200px] truncate">
               {film.title}
+            </p>
+            <p className="text-center text-sm text-muted-foreground mt-1">
+              {film.year}
+            </p>
+            
+            {/* Tap to close hint */}
+            <p className="text-center text-xs text-muted-foreground/60 mt-4">
+              Tap anywhere to close
             </p>
           </div>
         </div>
