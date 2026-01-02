@@ -280,7 +280,7 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
       {showMenu &&
         createPortal(
           <div
-            className="fixed inset-0 z-[1000] isolate bg-background/80 backdrop-blur-sm animate-fade-in"
+            className="fixed inset-0 z-[2147483647] isolate bg-background/80 backdrop-blur-sm animate-fade-in"
             onClick={() => setShowMenu(false)}
           >
             <div
@@ -301,15 +301,15 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
                 ) : (
                   <div className="absolute inset-0 bg-secondary" aria-hidden="true" />
                 )}
-                <div className="absolute inset-0 bg-background/60" aria-hidden="true" />
+                <div className="absolute inset-0 bg-background/60 pointer-events-none" aria-hidden="true" />
 
                 <div className="relative p-5">
-                  <div className="relative mx-auto w-44 sm:w-48 aspect-[2/3] rounded-2xl overflow-hidden film-card-shadow">
+                  <div className="relative isolate mx-auto w-44 sm:w-48 aspect-[2/3] rounded-2xl overflow-hidden film-card-shadow">
                     {film.poster ? (
                       <img
                         src={film.poster}
                         alt={film.title}
-                        className="h-full w-full object-cover"
+                        className="relative z-0 h-full w-full object-cover"
                         draggable={false}
                       />
                     ) : (
@@ -320,16 +320,16 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
 
                     {/* Blur layer on the poster to make actions readable */}
                     <div
-                      className="absolute inset-0 bg-background/30 backdrop-blur-md"
+                      className="absolute inset-0 z-10 bg-background/30 backdrop-blur-md pointer-events-none"
                       aria-hidden="true"
                     />
                     <div
-                      className="absolute inset-0 bg-gradient-to-t from-background/55 via-transparent to-transparent"
+                      className="absolute inset-0 z-10 bg-gradient-to-t from-background/55 via-transparent to-transparent pointer-events-none"
                       aria-hidden="true"
                     />
 
                     {/* Action buttons ON the poster - centered together */}
-                    <div className="absolute inset-0 flex items-center justify-center gap-6">
+                    <div className="absolute inset-0 z-20 flex items-center justify-center gap-6">
                       <button
                         type="button"
                         aria-label={isWatched ? "Remove from watched" : "Add to watched"}
