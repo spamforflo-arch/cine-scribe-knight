@@ -241,6 +241,37 @@ serve(async (req) => {
       });
     }
 
+    // Handle season episodes request
+    if (action === "getSeasonEpisodes" && body.tvId && body.seasonNumber) {
+      const { tvId, seasonNumber } = body;
+      console.log(`Fetching episodes for TV ${tvId} Season ${seasonNumber}`);
+      
+      const seasonRes = await fetch(
+        `${TMDB_BASE_URL}/tv/${tvId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`
+      );
+
+      if (!seasonRes.ok) {
+        throw new Error(`Season not found: ${seasonRes.status}`);
+      }
+
+      const seasonData = await seasonRes.json();
+      
+      const episodes = (seasonData.episodes || []).map((ep: any) => ({
+        id: ep.id,
+        episode_number: ep.episode_number,
+        name: ep.name,
+        overview: ep.overview,
+        still_path: ep.still_path,
+        air_date: ep.air_date,
+        runtime: ep.runtime,
+      }));
+
+      console.log(`Returning ${episodes.length} episodes`);
+      return new Response(JSON.stringify({ episodes }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Handle discover/browse request - include all languages
     console.log(`Fetching ${category} with genre ${genre}, sort: ${sortBy}, page: ${page}`);
 

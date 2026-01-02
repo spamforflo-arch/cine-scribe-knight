@@ -2,14 +2,19 @@ import { Button } from "@/components/ui/button";
 import { Compass, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { ContinueWatching } from "@/components/watch/ContinueWatching";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background grain flex flex-col">
       <AppHeader />
-      <main className="flex-1 flex items-center justify-center pt-14">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-center gap-8 animate-fade-in">
+      <main className="flex-1 pt-14">
+        <div className="container mx-auto px-4 py-8">
+          {/* Continue Watching Section */}
+          <ContinueWatching />
+          
+          {/* Hero Section */}
+          <div className="flex flex-col items-center justify-center gap-8 animate-fade-in py-12">
             {/* Logo */}
             <div className="w-24 h-24 rounded-3xl blue-gradient flex items-center justify-center shadow-2xl shadow-primary/40 animate-float blue-glow">
             </div>

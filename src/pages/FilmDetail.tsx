@@ -20,6 +20,8 @@ import {
   getWatchedFilms,
 } from "@/lib/filmStorage";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { VideoPlayer } from "@/components/watch/VideoPlayer";
+import { EpisodeSelector } from "@/components/watch/EpisodeSelector";
 
 interface CastMember {
   name: string;
@@ -71,6 +73,9 @@ const FilmDetail = () => {
   
   // Get media type from navigation state
   const passedMediaType = location.state?.mediaType as 'movie' | 'tv' | 'anime' | undefined;
+  const autoPlay = location.state?.autoPlay as boolean | undefined;
+  const initialSeason = location.state?.season as number | undefined;
+  const initialEpisode = location.state?.episode as number | undefined;
   
   // Extract tmdbId
   const tmdbId = id?.startsWith('tmdb-') ? parseInt(id.replace('tmdb-', '')) : parseInt(id || '0');
@@ -80,6 +85,13 @@ const FilmDetail = () => {
   const [inWatchlist, setInWatchlist] = useState(() => isFilmInWatchlist(tmdbId));
   const [userRating, setUserRating] = useState<number>(0);
   const [showTrailer, setShowTrailer] = useState(false);
+  
+  // Watch state
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [currentSeason, setCurrentSeason] = useState(initialSeason || 1);
+  const [currentEpisode, setCurrentEpisode] = useState(initialEpisode || 1);
+  const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState("");
+  const [totalEpisodesInSeason, setTotalEpisodesInSeason] = useState(0);
 
   // Get saved rating
   useEffect(() => {
@@ -96,6 +108,13 @@ const FilmDetail = () => {
     setIsWatched(isFilmWatched(tmdbId));
     setInWatchlist(isFilmInWatchlist(tmdbId));
   }, [tmdbId]);
+
+  // Auto-play if coming from continue watching
+  useEffect(() => {
+    if (autoPlay && film && !loading) {
+      setShowPlayer(true);
+    }
+  }, [autoPlay, film, loading]);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -210,6 +229,40 @@ const FilmDetail = () => {
     }
   };
 
+  const handleWatch = () => {
+    if (currentMediaType === 'movie') {
+      setShowPlayer(true);
+    } else {
+      // For TV/Anime, open player with current episode
+      setShowPlayer(true);
+    }
+  };
+
+  const handleSelectEpisode = (season: number, episode: number, title: string) => {
+    setCurrentSeason(season);
+    setCurrentEpisode(episode);
+    setCurrentEpisodeTitle(title);
+    setShowPlayer(true);
+  };
+
+  const handleNextEpisode = () => {
+    if (currentEpisode < totalEpisodesInSeason) {
+      setCurrentEpisode(prev => prev + 1);
+    } else if (film?.seasons && currentSeason < film.seasons) {
+      setCurrentSeason(prev => prev + 1);
+      setCurrentEpisode(1);
+    }
+  };
+
+  const handlePrevEpisode = () => {
+    if (currentEpisode > 1) {
+      setCurrentEpisode(prev => prev - 1);
+    } else if (currentSeason > 1) {
+      setCurrentSeason(prev => prev - 1);
+      // Would need to fetch previous season episode count
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -232,6 +285,30 @@ const FilmDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
+
+      {/* Video Player Modal */}
+      {showPlayer && (
+        <VideoPlayer
+          tmdbId={film.tmdbId}
+          mediaType={currentMediaType}
+          title={film.title}
+          poster={film.poster}
+          season={currentMediaType !== 'movie' ? currentSeason : undefined}
+          episode={currentMediaType !== 'movie' ? currentEpisode : undefined}
+          episodeTitle={currentEpisodeTitle}
+          onClose={() => setShowPlayer(false)}
+          onNextEpisode={handleNextEpisode}
+          onPrevEpisode={handlePrevEpisode}
+          hasNextEpisode={
+            currentMediaType !== 'movie' && 
+            (currentEpisode < totalEpisodesInSeason || (film.seasons && currentSeason < film.seasons))
+          }
+          hasPrevEpisode={
+            currentMediaType !== 'movie' && 
+            (currentEpisode > 1 || currentSeason > 1)
+          }
+        />
+      )}
 
       {/* Hero Backdrop */}
       <section className="relative h-[55vh] overflow-hidden pt-14">
@@ -346,15 +423,26 @@ const FilmDetail = () => {
 
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
+              {/* Watch Button */}
+              <Button 
+                variant="blue" 
+                size="lg" 
+                className="gap-2 click-bounce"
+                onClick={handleWatch}
+              >
+                <Play className="w-5 h-5 fill-current" />
+                {currentMediaType === 'movie' ? 'Watch Now' : 'Watch'}
+              </Button>
+              
               {film.trailerKey && (
                 <Button 
-                  variant="blue" 
+                  variant="glass" 
                   size="lg" 
                   className="gap-2 click-bounce"
                   onClick={() => setShowTrailer(true)}
                 >
                   <Play className="w-5 h-5" />
-                  Watch Trailer
+                  Trailer
                 </Button>
               )}
               <Button 
@@ -433,6 +521,20 @@ const FilmDetail = () => {
             )}
           </div>
         </div>
+
+        {/* Episode Selector for TV/Anime */}
+        {(currentMediaType === 'tv' || currentMediaType === 'anime') && film.seasons && film.seasons > 0 && (
+          <section className="mt-12">
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">
+              Episodes
+            </h2>
+            <EpisodeSelector
+              tmdbId={film.tmdbId}
+              totalSeasons={film.seasons}
+              onSelectEpisode={handleSelectEpisode}
+            />
+          </section>
+        )}
 
         {/* Trailer Modal */}
         {showTrailer && film.trailerKey && (
