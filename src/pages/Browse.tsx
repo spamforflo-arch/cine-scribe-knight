@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2 } from "lucide-react";
+import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2, SlidersHorizontal, Play, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilmCard } from "@/components/films/FilmCard";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { getContinueWatching, WatchProgress } from "@/lib/watchProgress";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const categories = [
   { id: "films", label: "Films", icon: Film },
@@ -58,6 +65,7 @@ const Browse = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [continueWatchingItems, setContinueWatchingItems] = useState<WatchProgress[]>([]);
   const { toast } = useToast();
 
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -129,8 +137,14 @@ const Browse = () => {
     }
   }, [initialState, sortBy]);
 
+  // Load continue watching items
+  useEffect(() => {
+    setContinueWatchingItems(getContinueWatching());
+  }, []);
+
   const handleBack = () => {
-    if (selectedGenre) {
+    if (selectedCategory) {
+      setSelectedCategory(null);
       setSelectedGenre(null);
       setContent([]);
       setCurrentPage(1);
@@ -138,8 +152,6 @@ const Browse = () => {
       restoredKeyRef.current = null;
       sessionStorage.removeItem(SCROLL_POSITION_KEY);
       sessionStorage.removeItem(BROWSE_STATE_KEY);
-    } else if (selectedCategory) {
-      setSelectedCategory(null);
     }
   };
 
@@ -221,7 +233,7 @@ const Browse = () => {
   }, [handleObserver]);
 
   // Current browse state for back navigation
-  const browseState = selectedCategory && selectedGenre ? { category: selectedCategory, genre: selectedGenre } : undefined;
+  const browseState = selectedCategory ? { category: selectedCategory, genre: selectedGenre || undefined } : undefined;
 
   return (
     <div className="min-h-screen bg-background grain">
@@ -229,7 +241,7 @@ const Browse = () => {
       <main className="pt-20 pb-16">
         <div className="container mx-auto px-4">
           {/* Navigation */}
-          {(selectedCategory || selectedGenre) && (
+          {selectedCategory && (
             <div className="flex items-center gap-4 mb-8">
               <button
                 onClick={handleBack}
@@ -274,46 +286,76 @@ const Browse = () => {
             </div>
           )}
 
-          {/* Genre Selection */}
-          {selectedCategory && !selectedGenre && (
-            <div className="space-y-8 animate-fade-in">
-              <div className="text-center space-y-4">
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground">
-                  Choose a Genre
-                </h1>
-                <p className="text-muted-foreground">
-                  Select a genre to see top {categories.find(c => c.id === selectedCategory)?.label}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto mt-12">
-                {genres.map((genre, index) => (
-                  <button
-                    key={genre}
-                    onClick={() => setSelectedGenre(genre)}
-                    className={cn(
-                      "px-6 py-3 rounded-full font-medium transition-all duration-300 click-scale animate-scale-in",
-                      "bg-secondary text-foreground hover:blue-gradient hover:text-white hover:shadow-lg hover:shadow-primary/30"
-                    )}
-                    style={{ animationDelay: `${index * 30}ms` }}
-                  >
-                    {genre}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Content Grid with Filters */}
-          {selectedCategory && selectedGenre && (
+          {selectedCategory && (
             <div className="space-y-8 animate-fade-in">
+              {/* Continue Watching Section */}
+              {continueWatchingItems.length > 0 && (
+                <section className="space-y-4">
+                  <h2 className="font-display text-xl font-bold text-foreground">
+                    Continue Watching
+                  </h2>
+                  <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                    {continueWatchingItems.map((item) => (
+                      <Link
+                        key={`${item.tmdbId}-${item.season}-${item.episode}`}
+                        to={`/film/tmdb-${item.tmdbId}`}
+                        state={{ 
+                          mediaType: item.mediaType,
+                          autoPlay: true,
+                          season: item.season,
+                          episode: item.episode,
+                        }}
+                        className="shrink-0 group"
+                      >
+                        <div className="relative w-32 rounded-xl overflow-hidden film-card-shadow">
+                          {item.poster ? (
+                            <img
+                              src={item.poster}
+                              alt={item.title}
+                              className="w-full aspect-[2/3] object-cover"
+                            />
+                          ) : (
+                            <div className="w-full aspect-[2/3] bg-secondary flex items-center justify-center">
+                              <span className="text-muted-foreground text-xs">No Poster</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                              <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
+                            </div>
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50">
+                            <div 
+                              className="h-full bg-primary transition-all"
+                              style={{ width: `${item.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-2 px-0.5">
+                          <p className="text-xs font-medium text-foreground truncate w-32">
+                            {item.title}
+                          </p>
+                          {item.season && item.episode && (
+                            <p className="text-xs text-muted-foreground">
+                              S{item.season} E{item.episode}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-                  {selectedGenre} {categories.find(c => c.id === selectedCategory)?.label}
+                  {selectedGenre ? `${selectedGenre} ` : ''}{categories.find(c => c.id === selectedCategory)?.label}
                 </h1>
                 
-                {/* Sort Filters */}
-                <div className="flex items-center gap-2">
+                {/* Sort and Filter */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Sort Options */}
                   {sortOptions.map((option) => {
                     const Icon = option.icon;
                     return (
@@ -329,8 +371,57 @@ const Browse = () => {
                       </Button>
                     );
                   })}
+                  
+                  {/* Genre Filter Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="glass" size="sm" className="gap-2">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        {selectedGenre || "Filter"}
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-secondary border-border max-h-80 overflow-y-auto">
+                      <DropdownMenuItem 
+                        onClick={() => setSelectedGenre(null)}
+                        className={cn(!selectedGenre && "bg-primary/20")}
+                      >
+                        All Genres
+                      </DropdownMenuItem>
+                      {genres.map((genre) => (
+                        <DropdownMenuItem
+                          key={genre}
+                          onClick={() => setSelectedGenre(genre)}
+                          className={cn(selectedGenre === genre && "bg-primary/20")}
+                        >
+                          {genre}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
+
+              {/* Show prompt to select genre if none selected */}
+              {!selectedGenre && !isLoading && content.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">
+                    Select a genre from the Filter to browse {categories.find(c => c.id === selectedCategory)?.label.toLowerCase()}
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
+                    {genres.slice(0, 6).map((genre) => (
+                      <Button
+                        key={genre}
+                        variant="glass"
+                        size="sm"
+                        onClick={() => setSelectedGenre(genre)}
+                      >
+                        {genre}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {isLoading ? (
                 <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
@@ -383,13 +474,13 @@ const Browse = () => {
                     </div>
                   )}
                 </>
-              ) : (
+              ) : selectedGenre ? (
                 <div className="text-center py-20">
                   <p className="text-muted-foreground">
                     No content available for this genre.
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </div>
