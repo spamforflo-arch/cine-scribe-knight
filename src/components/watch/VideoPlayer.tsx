@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { X, ChevronLeft, ChevronRight, PictureInPicture2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saveWatchProgress, WatchProgress } from "@/lib/watchProgress";
 import { cn } from "@/lib/utils";
@@ -34,12 +34,14 @@ export function VideoPlayer({
   hasPrevEpisode,
 }: VideoPlayerProps) {
   const [loading, setLoading] = useState(true);
+  const [isPiP, setIsPiP] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const pipWindowRef = useRef<Window | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
 
   // Build embed URL based on media type
-  const getEmbedUrl = () => {
+  const getEmbedUrl = useCallback(() => {
     const baseUrl = "https://www.vidking.net/embed";
     if (mediaType === 'movie') {
       return `${baseUrl}/movie/${tmdbId}`;
@@ -47,7 +49,7 @@ export function VideoPlayer({
       // TV or Anime - include season and episode
       return `${baseUrl}/tv/${tmdbId}/${season || 1}/${episode || 1}`;
     }
-  };
+  }, [mediaType, tmdbId, season, episode]);
 
   // Save progress periodically
   useEffect(() => {
@@ -88,6 +90,45 @@ export function VideoPlayer({
     setLoading(false);
   };
 
+  // Picture-in-Picture functionality
+  const togglePiP = useCallback(() => {
+    if (isPiP && pipWindowRef.current) {
+      pipWindowRef.current.close();
+      pipWindowRef.current = null;
+      setIsPiP(false);
+      return;
+    }
+
+    // Open a small popup window for PiP
+    const width = 400;
+    const height = 225;
+    const left = window.screen.width - width - 20;
+    const top = window.screen.height - height - 100;
+
+    const pipWindow = window.open(
+      getEmbedUrl(),
+      'pip-player',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,status=no,menubar=no,toolbar=no,location=no`
+    );
+
+    if (pipWindow) {
+      pipWindowRef.current = pipWindow;
+      setIsPiP(true);
+      
+      // Monitor when PiP window is closed
+      const checkClosed = setInterval(() => {
+        if (pipWindow.closed) {
+          clearInterval(checkClosed);
+          pipWindowRef.current = null;
+          setIsPiP(false);
+        }
+      }, 500);
+
+      // Close the main player
+      onClose();
+    }
+  }, [isPiP, onClose, getEmbedUrl]);
+
   return (
     <div className="fixed inset-0 z-[2147483647] bg-black flex flex-col">
       {/* Header */}
@@ -100,6 +141,15 @@ export function VideoPlayer({
             className="text-white hover:bg-white/20"
           >
             <X className="w-6 h-6" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={togglePiP}
+            className="text-white hover:bg-white/20"
+            title="Picture in Picture"
+          >
+            <PictureInPicture2 className="w-5 h-5" />
           </Button>
           <div>
             <h2 className="text-white font-semibold text-lg">{title}</h2>
