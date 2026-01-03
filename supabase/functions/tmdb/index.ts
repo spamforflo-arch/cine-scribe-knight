@@ -273,10 +273,9 @@ serve(async (req) => {
     }
 
     // Handle discover/browse request - include all languages
-    console.log(`Fetching ${category} with genre ${genre}, sort: ${sortBy}, page: ${page}`);
+    console.log(`Fetching ${category} with genre ${genre || 'all'}, sort: ${sortBy}, page: ${page}`);
 
     let endpoint = "";
-    let genreId: number | undefined;
     let sortParam = "popularity.desc";
 
     if (sortBy === "newest") {
@@ -285,28 +284,26 @@ serve(async (req) => {
       sortParam = "vote_average.desc";
     }
 
-    // Use with_genres to get ONLY that specific genre, and add certification filters
+    // Build endpoint - genre is optional
     if (category === "films") {
-      genreId = genreMap[genre];
-      // Use with_genres for exact genre matching
-      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genreId}&without_genres=99&sort_by=${sortParam}&vote_count.gte=20&page=${page}&include_adult=false`;
+      const genreId = genre ? genreMap[genre] : undefined;
+      const genreFilter = genreId ? `&with_genres=${genreId}` : '';
+      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}${genreFilter}&without_genres=99&sort_by=${sortParam}&vote_count.gte=20&page=${page}&include_adult=false`;
     } else if (category === "tv") {
-      genreId = tvGenreMap[genre];
+      const genreId = genre ? tvGenreMap[genre] : undefined;
+      const genreFilter = genreId ? `&with_genres=${genreId}` : '';
       const tvSortParam = sortBy === "newest" ? "first_air_date.desc" : sortParam;
-      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genreId}&sort_by=${tvSortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
+      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}${genreFilter}&sort_by=${tvSortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
     } else if (category === "anime") {
-      // For anime, use Animation genre (16) with origin_country=JP for Japanese animation
-      // If user selected Animation genre, just use Animation + Japan
-      // Otherwise combine their genre with Animation + Japan
-      const animeGenreId = genreMap[genre];
-      const tvAnimeGenreId = tvGenreMap[genre] || 16;
+      // For anime, always use Animation genre (16) with origin_country=JP
+      const tvAnimeGenreId = genre ? tvGenreMap[genre] : undefined;
+      const tvSortParam = sortBy === "newest" ? "first_air_date.desc" : sortParam;
       
-      // Use TV shows from Japan with Animation genre
-      if (genre === "Animation") {
-        endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&with_origin_country=JP&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
+      if (!genre || genre === "Animation") {
+        endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&with_origin_country=JP&sort_by=${tvSortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
       } else {
         // For other genres, search for Japanese animation with that genre
-        endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16,${tvAnimeGenreId}&with_origin_country=JP&sort_by=${sortBy === "newest" ? "first_air_date.desc" : sortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
+        endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16,${tvAnimeGenreId}&with_origin_country=JP&sort_by=${tvSortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
       }
     }
 

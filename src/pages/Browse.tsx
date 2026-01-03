@@ -156,9 +156,9 @@ const Browse = () => {
   };
 
   useEffect(() => {
-    if (!selectedCategory || !selectedGenre) return;
+    if (!selectedCategory) return;
 
-    const key = `${selectedCategory}|${selectedGenre}|${sortBy}`;
+    const key = `${selectedCategory}|${selectedGenre || 'all'}|${sortBy}`;
     if (restoredKeyRef.current === key) return;
 
     setContent([]);
@@ -167,7 +167,7 @@ const Browse = () => {
   }, [selectedCategory, selectedGenre, sortBy]);
 
   const fetchContent = async (page: number, reset: boolean = false) => {
-    if (!selectedCategory || !selectedGenre) return;
+    if (!selectedCategory) return;
     
     if (reset) {
       setIsLoading(true);
@@ -402,27 +402,6 @@ const Browse = () => {
                 </div>
               </div>
 
-              {/* Show prompt to select genre if none selected */}
-              {!selectedGenre && !isLoading && content.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">
-                    Select a genre from the Filter to browse {categories.find(c => c.id === selectedCategory)?.label.toLowerCase()}
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
-                    {genres.slice(0, 6).map((genre) => (
-                      <Button
-                        key={genre}
-                        variant="glass"
-                        size="sm"
-                        onClick={() => setSelectedGenre(genre)}
-                      >
-                        {genre}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {isLoading ? (
                 <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
                   {Array.from({ length: 12 }).map((_, i) => (
@@ -474,13 +453,13 @@ const Browse = () => {
                     </div>
                   )}
                 </>
-              ) : selectedGenre ? (
+              ) : (
                 <div className="text-center py-20">
                   <p className="text-muted-foreground">
-                    No content available for this genre.
+                    No content available{selectedGenre ? ` for ${selectedGenre}` : ''}.
                   </p>
                 </div>
-              ) : null}
+              )}
             </div>
           )}
         </div>
