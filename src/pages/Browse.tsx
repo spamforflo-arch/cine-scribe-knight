@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2, SlidersHorizontal, Play, ChevronDown } from "lucide-react";
+import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2, SlidersHorizontal, Play, ChevronDown, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilmCard } from "@/components/films/FilmCard";
 import { cn } from "@/lib/utils";
@@ -28,9 +28,22 @@ const genres = [
 ];
 
 const sortOptions = [
-  { id: "popularity", label: "Popular", icon: TrendingUp },
+  { id: "trending", label: "Trending", icon: TrendingUp },
   { id: "newest", label: "Newest", icon: Clock },
   { id: "rating", label: "Top Rated", icon: Star },
+];
+
+const languages = [
+  { code: "", label: "All Languages" },
+  { code: "en", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "ko", label: "Korean" },
+  { code: "ja", label: "Japanese" },
+  { code: "es", label: "Spanish" },
+  { code: "fr", label: "French" },
+  { code: "ta", label: "Tamil" },
+  { code: "te", label: "Telugu" },
+  { code: "zh", label: "Chinese" },
 ];
 
 type ContentItem = {
@@ -59,7 +72,8 @@ const Browse = () => {
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialState?.category || null);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(initialState?.genre || null);
-  const [sortBy, setSortBy] = useState("popularity");
+  const [sortBy, setSortBy] = useState("trending");
+  const [selectedLanguage, setSelectedLanguage] = useState("");
   const [content, setContent] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -158,13 +172,13 @@ const Browse = () => {
   useEffect(() => {
     if (!selectedCategory) return;
 
-    const key = `${selectedCategory}|${selectedGenre || 'all'}|${sortBy}`;
+    const key = `${selectedCategory}|${selectedGenre || 'all'}|${sortBy}|${selectedLanguage}`;
     if (restoredKeyRef.current === key) return;
 
     setContent([]);
     setCurrentPage(1);
     fetchContent(1, true);
-  }, [selectedCategory, selectedGenre, sortBy]);
+  }, [selectedCategory, selectedGenre, sortBy, selectedLanguage]);
 
   const fetchContent = async (page: number, reset: boolean = false) => {
     if (!selectedCategory) return;
@@ -177,7 +191,7 @@ const Browse = () => {
     
     try {
       const { data, error } = await supabase.functions.invoke('tmdb', {
-        body: { category: selectedCategory, genre: selectedGenre, sortBy, page }
+        body: { category: selectedCategory, genre: selectedGenre, sortBy, page, language: selectedLanguage }
       });
 
       if (error) throw error;
@@ -289,9 +303,100 @@ const Browse = () => {
           {/* Content Grid with Filters */}
           {selectedCategory && (
             <div className="space-y-8 animate-fade-in">
-              {/* Continue Watching Section */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
+                  {selectedGenre ? `${selectedGenre} ` : ''}{categories.find(c => c.id === selectedCategory)?.label}
+                </h1>
+                
+                {/* Sort and Filter */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Sort Options */}
+                  {sortOptions.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <Button
+                        key={option.id}
+                        variant={sortBy === option.id ? "blue" : "glass"}
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setSortBy(option.id)}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {option.label}
+                      </Button>
+                    );
+                  })}
+                  
+                  {/* Continue Watching Button */}
+                  {continueWatchingItems.length > 0 && (
+                    <Button
+                      variant="glass"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        document.getElementById('continue-watching-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                    >
+                      <Play className="w-4 h-4" />
+                      Continue
+                    </Button>
+                  )}
+                  
+                  {/* Genre Filter Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="glass" size="sm" className="gap-2">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        {selectedGenre || "Genre"}
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-secondary border-border max-h-80 overflow-y-auto">
+                      <DropdownMenuItem 
+                        onClick={() => setSelectedGenre(null)}
+                        className={cn(!selectedGenre && "bg-primary/20")}
+                      >
+                        All Genres
+                      </DropdownMenuItem>
+                      {genres.map((genre) => (
+                        <DropdownMenuItem
+                          key={genre}
+                          onClick={() => setSelectedGenre(genre)}
+                          className={cn(selectedGenre === genre && "bg-primary/20")}
+                        >
+                          {genre}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Language Filter Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="glass" size="sm" className="gap-2">
+                        <Globe className="w-4 h-4" />
+                        {languages.find(l => l.code === selectedLanguage)?.label || "Language"}
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-secondary border-border max-h-80 overflow-y-auto">
+                      {languages.map((lang) => (
+                        <DropdownMenuItem
+                          key={lang.code}
+                          onClick={() => setSelectedLanguage(lang.code)}
+                          className={cn(selectedLanguage === lang.code && "bg-primary/20")}
+                        >
+                          {lang.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              {/* Continue Watching Section - after Top Rated and filters */}
               {continueWatchingItems.length > 0 && (
-                <section className="space-y-4">
+                <section id="continue-watching-section" className="space-y-4">
                   <h2 className="font-display text-xl font-bold text-foreground">
                     Continue Watching
                   </h2>
@@ -347,60 +452,6 @@ const Browse = () => {
                   </div>
                 </section>
               )}
-
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-                  {selectedGenre ? `${selectedGenre} ` : ''}{categories.find(c => c.id === selectedCategory)?.label}
-                </h1>
-                
-                {/* Sort and Filter */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Sort Options */}
-                  {sortOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <Button
-                        key={option.id}
-                        variant={sortBy === option.id ? "blue" : "glass"}
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => setSortBy(option.id)}
-                      >
-                        <Icon className="w-4 h-4" />
-                        {option.label}
-                      </Button>
-                    );
-                  })}
-                  
-                  {/* Genre Filter Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="glass" size="sm" className="gap-2">
-                        <SlidersHorizontal className="w-4 h-4" />
-                        {selectedGenre || "Filter"}
-                        <ChevronDown className="w-3 h-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-secondary border-border max-h-80 overflow-y-auto">
-                      <DropdownMenuItem 
-                        onClick={() => setSelectedGenre(null)}
-                        className={cn(!selectedGenre && "bg-primary/20")}
-                      >
-                        All Genres
-                      </DropdownMenuItem>
-                      {genres.map((genre) => (
-                        <DropdownMenuItem
-                          key={genre}
-                          onClick={() => setSelectedGenre(genre)}
-                          className={cn(selectedGenre === genre && "bg-primary/20")}
-                        >
-                          {genre}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
 
               {isLoading ? (
                 <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
