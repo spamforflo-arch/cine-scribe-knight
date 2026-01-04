@@ -273,27 +273,94 @@ serve(async (req) => {
     }
 
     // Handle discover/browse request - include all languages
-    console.log(`Fetching ${category} with genre ${genre || 'all'}, sort: ${sortBy}, page: ${page}`);
+    const { language } = body;
+    console.log(`Fetching ${category} with genre ${genre || 'all'}, sort: ${sortBy}, page: ${page}, language: ${language || 'all'}`);
 
     let endpoint = "";
     let sortParam = "popularity.desc";
 
-    if (sortBy === "newest") {
+    // Handle trending vs other sort options
+    if (sortBy === "trending") {
+      // Use trending endpoint for trending sort
+      const mediaType = category === "films" ? "movie" : "tv";
+      const langParam = language ? `&language=${language}` : '';
+      
+      if (category === "anime") {
+        // For anime, we still need discover to filter by origin country
+        sortParam = "popularity.desc";
+      } else {
+        const trendingEndpoint = `${TMDB_BASE_URL}/trending/${mediaType}/week?api_key=${TMDB_API_KEY}&page=${page}${langParam}`;
+        console.log(`Fetching trending from: ${trendingEndpoint.replace(TMDB_API_KEY, "***")}`);
+        
+        const response = await fetch(trendingEndpoint);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("TMDB API error:", response.status, errorText);
+          throw new Error(`TMDB API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        let filteredResults = filterContent(data.results || []);
+        
+        // Apply language filter if specified
+        if (language) {
+          filteredResults = filteredResults.filter((item: any) => item.original_language === language);
+        }
+        
+        // Apply genre filter if specified
+        if (genre) {
+          const genreId = category === "films" ? genreMap[genre] : tvGenreMap[genre];
+          if (genreId) {
+            filteredResults = filteredResults.filter((item: any) => 
+              item.genre_ids?.includes(genreId)
+            );
+          }
+        }
+        
+        const results = filteredResults.map((item: any) => ({
+          id: `tmdb-${item.id}`,
+          tmdbId: item.id,
+          title: item.title || item.name,
+          year: new Date(item.release_date || item.first_air_date || "").getFullYear() || 0,
+          poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+          backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
+          rating: Math.round((item.vote_average / 2) * 10) / 10,
+          synopsis: item.overview,
+          genres: [genre],
+          director: "",
+          cast: [],
+          runtime: 0,
+          reviewCount: item.vote_count,
+          mediaType: category === 'films' ? 'movie' : category === 'anime' ? 'anime' : 'tv',
+        })).filter((item: any) => item.year > 0) || [];
+
+        console.log(`Returning ${results.length} trending results, page ${page}, total pages: ${data.total_pages}`);
+
+        return new Response(JSON.stringify({ results, totalPages: data.total_pages, currentPage: page }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else if (sortBy === "newest") {
       sortParam = "primary_release_date.desc";
     } else if (sortBy === "rating") {
       sortParam = "vote_average.desc";
     }
 
+    // Build language filter
+    const langFilter = language ? `&with_original_language=${language}` : '';
+
     // Build endpoint - genre is optional
     if (category === "films") {
       const genreId = genre ? genreMap[genre] : undefined;
       const genreFilter = genreId ? `&with_genres=${genreId}` : '';
-      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}${genreFilter}&without_genres=99&sort_by=${sortParam}&vote_count.gte=20&page=${page}&include_adult=false`;
+      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}${genreFilter}&without_genres=99&sort_by=${sortParam}&vote_count.gte=20&page=${page}&include_adult=false${langFilter}`;
     } else if (category === "tv") {
       const genreId = genre ? tvGenreMap[genre] : undefined;
       const genreFilter = genreId ? `&with_genres=${genreId}` : '';
       const tvSortParam = sortBy === "newest" ? "first_air_date.desc" : sortParam;
-      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}${genreFilter}&sort_by=${tvSortParam}&vote_count.gte=10&page=${page}&include_adult=false`;
+      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}${genreFilter}&sort_by=${tvSortParam}&vote_count.gte=10&page=${page}&include_adult=false${langFilter}`;
     } else if (category === "anime") {
       // For anime, always use Animation genre (16) with origin_country=JP
       const tvAnimeGenreId = genre ? tvGenreMap[genre] : undefined;
