@@ -40,14 +40,16 @@ export function VideoPlayer({
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
 
-  // Build embed URL based on media type
+  // Build embed URL using VidSrc API
   const getEmbedUrl = useCallback(() => {
-    const baseUrl = "https://www.vidking.net/embed";
+    const baseUrl = "https://vidsrc-embed.ru/embed";
     if (mediaType === 'movie') {
-      return `${baseUrl}/movie/${tmdbId}`;
+      return `${baseUrl}/movie?tmdb=${tmdbId}&autoplay=1`;
     } else {
       // TV or Anime - include season and episode
-      return `${baseUrl}/tv/${tmdbId}/${season || 1}/${episode || 1}`;
+      const s = season || 1;
+      const e = episode || 1;
+      return `${baseUrl}/tv?tmdb=${tmdbId}&season=${s}&episode=${e}&autoplay=1&autonext=1`;
     }
   }, [mediaType, tmdbId, season, episode]);
 

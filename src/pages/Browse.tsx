@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2, SlidersHorizontal, Play, ChevronDown, Globe } from "lucide-react";
+import { Film, Tv, Sparkles, ChevronLeft, TrendingUp, Clock, Star, Loader2, SlidersHorizontal, ChevronDown, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilmCard } from "@/components/films/FilmCard";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { getContinueWatching, WatchProgress } from "@/lib/watchProgress";
+import { ContinueWatchingSheet } from "@/components/watch/ContinueWatchingSheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,7 +79,6 @@ const Browse = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [continueWatchingItems, setContinueWatchingItems] = useState<WatchProgress[]>([]);
   const { toast } = useToast();
 
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -151,10 +150,6 @@ const Browse = () => {
     }
   }, [initialState, sortBy]);
 
-  // Load continue watching items
-  useEffect(() => {
-    setContinueWatchingItems(getContinueWatching());
-  }, []);
 
   const handleBack = () => {
     if (selectedCategory) {
@@ -328,19 +323,7 @@ const Browse = () => {
                   })}
                   
                   {/* Continue Watching Button */}
-                  {continueWatchingItems.length > 0 && (
-                    <Button
-                      variant="glass"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => {
-                        document.getElementById('continue-watching-section')?.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                    >
-                      <Play className="w-4 h-4" />
-                      Continue
-                    </Button>
-                  )}
+                  <ContinueWatchingSheet />
                   
                   {/* Genre Filter Dropdown */}
                   <DropdownMenu>
@@ -394,64 +377,6 @@ const Browse = () => {
                 </div>
               </div>
 
-              {/* Continue Watching Section - after Top Rated and filters */}
-              {continueWatchingItems.length > 0 && (
-                <section id="continue-watching-section" className="space-y-4">
-                  <h2 className="font-display text-xl font-bold text-foreground">
-                    Continue Watching
-                  </h2>
-                  <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-                    {continueWatchingItems.map((item) => (
-                      <Link
-                        key={`${item.tmdbId}-${item.season}-${item.episode}`}
-                        to={`/film/tmdb-${item.tmdbId}`}
-                        state={{ 
-                          mediaType: item.mediaType,
-                          autoPlay: true,
-                          season: item.season,
-                          episode: item.episode,
-                        }}
-                        className="shrink-0 group"
-                      >
-                        <div className="relative w-32 rounded-xl overflow-hidden film-card-shadow">
-                          {item.poster ? (
-                            <img
-                              src={item.poster}
-                              alt={item.title}
-                              className="w-full aspect-[2/3] object-cover"
-                            />
-                          ) : (
-                            <div className="w-full aspect-[2/3] bg-secondary flex items-center justify-center">
-                              <span className="text-muted-foreground text-xs">No Poster</span>
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                              <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
-                            </div>
-                          </div>
-                          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50">
-                            <div 
-                              className="h-full bg-primary transition-all"
-                              style={{ width: `${item.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="mt-2 px-0.5">
-                          <p className="text-xs font-medium text-foreground truncate w-32">
-                            {item.title}
-                          </p>
-                          {item.season && item.episode && (
-                            <p className="text-xs text-muted-foreground">
-                              S{item.season} E{item.episode}
-                            </p>
-                          )}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </section>
-              )}
 
               {isLoading ? (
                 <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
