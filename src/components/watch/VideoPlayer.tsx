@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, ChevronLeft, ChevronRight, PictureInPicture2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, PictureInPicture2, Settings, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saveWatchProgress, WatchProgress } from "@/lib/watchProgress";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface VideoPlayerProps {
   tmdbId: number;
@@ -18,6 +27,19 @@ interface VideoPlayerProps {
   hasNextEpisode?: boolean;
   hasPrevEpisode?: boolean;
 }
+
+interface StreamingSource {
+  id: string;
+  name: string;
+  url?: string;
+  type: 'embed' | 'external';
+  quality?: string;
+}
+
+const EMBED_SOURCES: StreamingSource[] = [
+  { id: 'vidsrcnme', name: 'VidSrc NME', type: 'embed' },
+  { id: 'vidking', name: 'VidKing', type: 'embed' },
+];
 
 export function VideoPlayer({
   tmdbId,
@@ -35,31 +57,84 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const [loading, setLoading] = useState(true);
   const [isPiP, setIsPiP] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<string>('vidsrcnme');
+  const [watchmodeSources, setWatchmodeSources] = useState<StreamingSource[]>([]);
+  const [loadingWatchmode, setLoadingWatchmode] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const pipWindowRef = useRef<Window | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
 
-  // Build embed URL using VidSrc API
+  // Fetch Watchmode streaming sources
+  useEffect(() => {
+    const fetchWatchmodeSources = async () => {
+      setLoadingWatchmode(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('streaming-sources', {
+          body: { tmdbId, mediaType: mediaType === 'anime' ? 'tv' : mediaType }
+        });
+
+        if (error) {
+          console.error('Error fetching Watchmode sources:', error);
+        } else if (data?.sources?.length > 0) {
+          const sources: StreamingSource[] = data.sources.map((s: any, i: number) => ({
+            id: `watchmode-${i}`,
+            name: s.name,
+            url: s.url,
+            type: 'external' as const,
+            quality: s.quality,
+          }));
+          setWatchmodeSources(sources);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Watchmode sources:', err);
+      } finally {
+        setLoadingWatchmode(false);
+      }
+    };
+
+    fetchWatchmodeSources();
+  }, [tmdbId, mediaType]);
+
+  // Build embed URL based on selected source
   const getEmbedUrl = useCallback(() => {
-    const baseUrl = "https://vidsrcnme.ru/embed";
-    if (mediaType === 'movie') {
-      return `${baseUrl}/movie/${tmdbId}`;
-    } else {
-      // TV or Anime - include season and episode
-      const s = season || 1;
-      const e = episode || 1;
-      return `${baseUrl}/tv/${tmdbId}/${s}/${e}`;
+    const s = season || 1;
+    const e = episode || 1;
+
+    switch (selectedSource) {
+      case 'vidsrcnme':
+        if (mediaType === 'movie') {
+          return `https://vidsrcnme.ru/embed/movie/${tmdbId}`;
+        } else {
+          return `https://vidsrcnme.ru/embed/tv/${tmdbId}/${s}/${e}`;
+        }
+      case 'vidking':
+        if (mediaType === 'movie') {
+          return `https://vidking.net/embed/movie/${tmdbId}`;
+        } else {
+          return `https://vidking.net/embed/tv/${tmdbId}/${s}/${e}`;
+        }
+      default:
+        // Check if it's a Watchmode external source
+        const watchmodeSource = watchmodeSources.find(src => src.id === selectedSource);
+        if (watchmodeSource?.url) {
+          return watchmodeSource.url;
+        }
+        // Fallback to vidsrcnme
+        if (mediaType === 'movie') {
+          return `https://vidsrcnme.ru/embed/movie/${tmdbId}`;
+        } else {
+          return `https://vidsrcnme.ru/embed/tv/${tmdbId}/${s}/${e}`;
+        }
     }
-  }, [mediaType, tmdbId, season, episode]);
+  }, [mediaType, tmdbId, season, episode, selectedSource, watchmodeSources]);
 
   // Save progress periodically
   useEffect(() => {
     progressInterval.current = setInterval(() => {
-      // Estimate progress (since we can't access iframe internals due to cross-origin)
       setCurrentTime(prev => {
         const newTime = prev + 10;
-        const estimatedDuration = mediaType === 'movie' ? 7200 : 2400; // 2h for movies, 40min for episodes
+        const estimatedDuration = mediaType === 'movie' ? 7200 : 2400;
         const progress = Math.min((newTime / estimatedDuration) * 100, 99);
         
         const progressData: WatchProgress = {
@@ -79,7 +154,7 @@ export function VideoPlayer({
         saveWatchProgress(progressData);
         return newTime;
       });
-    }, 10000); // Update every 10 seconds
+    }, 10000);
 
     return () => {
       if (progressInterval.current) {
@@ -92,6 +167,14 @@ export function VideoPlayer({
     setLoading(false);
   };
 
+  const handleSourceChange = (sourceId: string) => {
+    setLoading(true);
+    setSelectedSource(sourceId);
+  };
+
+  // Check if selected source is external (Watchmode)
+  const isExternalSource = watchmodeSources.some(s => s.id === selectedSource);
+
   // Picture-in-Picture functionality
   const togglePiP = useCallback(() => {
     if (isPiP && pipWindowRef.current) {
@@ -101,7 +184,6 @@ export function VideoPlayer({
       return;
     }
 
-    // Open a small popup window for PiP
     const width = 400;
     const height = 225;
     const left = window.screen.width - width - 20;
@@ -117,7 +199,6 @@ export function VideoPlayer({
       pipWindowRef.current = pipWindow;
       setIsPiP(true);
       
-      // Monitor when PiP window is closed
       const checkClosed = setInterval(() => {
         if (pipWindow.closed) {
           clearInterval(checkClosed);
@@ -126,10 +207,12 @@ export function VideoPlayer({
         }
       }, 500);
 
-      // Close the main player
       onClose();
     }
   }, [isPiP, onClose, getEmbedUrl]);
+
+  const allSources = [...EMBED_SOURCES, ...watchmodeSources];
+  const currentSource = allSources.find(s => s.id === selectedSource);
 
   return (
     <div className="fixed inset-0 z-[2147483647] bg-black flex flex-col">
@@ -144,6 +227,63 @@ export function VideoPlayer({
           >
             <X className="w-6 h-6" />
           </Button>
+          
+          {/* Source Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-white hover:bg-white/20 gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                {currentSource?.name || 'Select Source'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 bg-background/95 backdrop-blur-sm">
+              <DropdownMenuLabel>Embed Sources</DropdownMenuLabel>
+              {EMBED_SOURCES.map((source) => (
+                <DropdownMenuItem
+                  key={source.id}
+                  onClick={() => handleSourceChange(source.id)}
+                  className="flex items-center justify-between cursor-pointer"
+                >
+                  <span>{source.name}</span>
+                  {selectedSource === source.id && <Check className="w-4 h-4" />}
+                </DropdownMenuItem>
+              ))}
+              
+              {watchmodeSources.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>
+                    Watchmode Sources
+                    {loadingWatchmode && <span className="text-xs text-muted-foreground ml-2">(loading...)</span>}
+                  </DropdownMenuLabel>
+                  {watchmodeSources.map((source) => (
+                    <DropdownMenuItem
+                      key={source.id}
+                      onClick={() => handleSourceChange(source.id)}
+                      className="flex items-center justify-between cursor-pointer"
+                    >
+                      <span>{source.name} {source.quality && `(${source.quality})`}</span>
+                      {selectedSource === source.id && <Check className="w-4 h-4" />}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              
+              {!loadingWatchmode && watchmodeSources.length === 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-muted-foreground text-xs">
+                    No Watchmode sources available
+                  </DropdownMenuLabel>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button 
             variant="ghost" 
             size="icon" 
@@ -153,6 +293,7 @@ export function VideoPlayer({
           >
             <PictureInPicture2 className="w-5 h-5" />
           </Button>
+          
           <div>
             <h2 className="text-white font-semibold text-lg">{title}</h2>
             {season && episode && (
@@ -202,18 +343,32 @@ export function VideoPlayer({
         </div>
       )}
 
-      {/* Video iframe */}
-      <iframe
-        ref={iframeRef}
-        src={getEmbedUrl()}
-        className={cn(
-          "flex-1 w-full h-full border-0",
-          loading && "opacity-0"
-        )}
-        allowFullScreen
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        onLoad={handleIframeLoad}
-      />
+      {/* Video iframe or external link */}
+      {isExternalSource ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-white mb-4">This source opens in a new tab</p>
+            <Button
+              onClick={() => window.open(getEmbedUrl(), '_blank')}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Watch on {currentSource?.name}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <iframe
+          ref={iframeRef}
+          src={getEmbedUrl()}
+          className={cn(
+            "flex-1 w-full h-full border-0",
+            loading && "opacity-0"
+          )}
+          allowFullScreen
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          onLoad={handleIframeLoad}
+        />
+      )}
     </div>
   );
 }
