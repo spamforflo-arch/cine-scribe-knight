@@ -42,14 +42,14 @@ export function VideoPlayer({
 
   // Build embed URL using VidSrc API
   const getEmbedUrl = useCallback(() => {
-    const baseUrl = "https://vidsrc-embed.ru/embed";
+    const baseUrl = "https://vidsrcnme.ru/embed";
     if (mediaType === 'movie') {
-      return `${baseUrl}/movie?tmdb=${tmdbId}&autoplay=1`;
+      return `${baseUrl}/movie/${tmdbId}`;
     } else {
       // TV or Anime - include season and episode
       const s = season || 1;
       const e = episode || 1;
-      return `${baseUrl}/tv?tmdb=${tmdbId}&season=${s}&episode=${e}&autoplay=1&autonext=1`;
+      return `${baseUrl}/tv/${tmdbId}/${s}/${e}`;
     }
   }, [mediaType, tmdbId, season, episode]);
 
