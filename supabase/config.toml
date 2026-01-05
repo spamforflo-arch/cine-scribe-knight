@@ -1,4 +1,1 @@
 project_id = "fhgethljnrmdayxkbtax"
-
-[functions.streaming-sources]
-verify_jwt = false
