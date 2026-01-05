@@ -128,30 +128,30 @@ export function VideoPlayer({
 
   return (
     <div className="fixed inset-0 z-[2147483647] bg-black flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 z-10">
-        <div className="flex items-center gap-4">
+      {/* Header - positioned to not overlap iframe controls */}
+      <div className="flex items-center justify-between p-2 sm:p-3 bg-black shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={onClose}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 shrink-0 h-8 w-8 sm:h-10 sm:w-10"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </Button>
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={togglePiP}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 shrink-0 h-8 w-8 sm:h-10 sm:w-10"
             title="Picture in Picture"
           >
-            <PictureInPicture2 className="w-5 h-5" />
+            <PictureInPicture2 className="w-4 h-4" />
           </Button>
-          <div>
-            <h2 className="text-white font-semibold text-lg">{title}</h2>
+          <div className="min-w-0">
+            <h2 className="text-white font-semibold text-sm sm:text-base truncate">{title}</h2>
             {season && episode && (
-              <p className="text-white/70 text-sm">
+              <p className="text-white/70 text-xs truncate">
                 S{season} E{episode}{episodeTitle ? ` - ${episodeTitle}` : ''}
               </p>
             )}
@@ -160,16 +160,16 @@ export function VideoPlayer({
         
         {/* Episode Navigation */}
         {(mediaType === 'tv' || mediaType === 'anime') && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 shrink-0">
             {hasPrevEpisode && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onPrevEpisode}
-                className="text-white hover:bg-white/20 gap-1"
+                className="text-white hover:bg-white/20 gap-1 h-8 px-2 text-xs"
               >
                 <ChevronLeft className="w-4 h-4" />
-                Previous
+                <span className="hidden sm:inline">Prev</span>
               </Button>
             )}
             {hasNextEpisode && (
@@ -177,9 +177,9 @@ export function VideoPlayer({
                 variant="ghost"
                 size="sm"
                 onClick={onNextEpisode}
-                className="text-white hover:bg-white/20 gap-1"
+                className="text-white hover:bg-white/20 gap-1 h-8 px-2 text-xs"
               >
-                Next
+                <span className="hidden sm:inline">Next</span>
                 <ChevronRight className="w-4 h-4" />
               </Button>
             )}
@@ -189,20 +189,20 @@ export function VideoPlayer({
 
       {/* Loading State */}
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black">
+        <div className="absolute inset-0 flex items-center justify-center bg-black pointer-events-none">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-white/70">Loading player...</p>
+            <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-white/70 text-sm">Loading player...</p>
           </div>
         </div>
       )}
 
-      {/* Video iframe */}
+      {/* Video iframe - takes remaining space */}
       <iframe
         ref={iframeRef}
         src={getEmbedUrl()}
         className={cn(
-          "flex-1 w-full h-full border-0",
+          "flex-1 w-full border-0",
           loading && "opacity-0"
         )}
         allowFullScreen
