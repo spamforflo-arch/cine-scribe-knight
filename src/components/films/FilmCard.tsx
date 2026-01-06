@@ -48,22 +48,39 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
   
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Sync state with localStorage
-  useEffect(() => {
-    setIsLiked(isFilmLiked(tmdbId));
-    setIsWatched(isFilmWatched(tmdbId));
-    setInWatchlist(isFilmInWatchlist(tmdbId));
-  }, [tmdbId]);
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartRef.current = null;
+  }, []);
 
-  const sizeClasses = {
-    sm: "w-[100px]",
-    md: "w-[140px] sm:w-[160px]",
-    lg: "w-[180px] sm:w-[200px]",
-  };
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const t = e.touches[0];
+    if (!t) return;
+
+    const dx = Math.abs(t.clientX - touchStartRef.current.x);
+    const dy = Math.abs(t.clientY - touchStartRef.current.y);
+
+    // If the user is scrolling, cancel the long-press timer
+    if (dx > 12 || dy > 12) {
+      handleLongPressEnd();
+    }
+  }, [handleLongPressEnd]);
 
   const handleLongPressStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-    e.preventDefault();
+    // On touch devices, do NOT prevent default here (it breaks scrolling)
+    if ("touches" in e) {
+      const t = e.touches[0];
+      if (t) touchStartRef.current = { x: t.clientX, y: t.clientY };
+    } else {
+      e.preventDefault();
+    }
+
     const rect = cardRef.current?.getBoundingClientRect();
     if (rect) {
       const margin = 16;
@@ -77,23 +94,29 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
 
       setMenuPosition({ x, y });
     }
-    
+
     longPressTimer.current = setTimeout(async () => {
       setShowMenu(true);
       try {
         await Haptics.impact({ style: ImpactStyle.Medium });
       } catch {
-        if ('vibrate' in navigator) navigator.vibrate(50);
+        if ("vibrate" in navigator) navigator.vibrate(50);
       }
-    }, 500);
+    }, 700);
   }, []);
 
-  const handleLongPressEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
+  // Sync state with localStorage
+  useEffect(() => {
+    setIsLiked(isFilmLiked(tmdbId));
+    setIsWatched(isFilmWatched(tmdbId));
+    setInWatchlist(isFilmInWatchlist(tmdbId));
+  }, [tmdbId]);
+
+  const sizeClasses = {
+    sm: "w-[100px]",
+    md: "w-[140px] sm:w-[160px]",
+    lg: "w-[180px] sm:w-[200px]",
+  };
 
   const filmData = {
     id: film.id,
@@ -179,6 +202,7 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
           handleLongPressEnd();
         }}
         onTouchStart={handleLongPressStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleLongPressEnd}
         onTouchCancel={handleLongPressEnd}
         onMouseDown={handleLongPressStart}

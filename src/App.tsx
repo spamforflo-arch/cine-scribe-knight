@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Browse from "./pages/Browse";
 import FilmDetail from "./pages/FilmDetail";
+import PersonDetail from "./pages/PersonDetail";
 import Diary from "./pages/Diary";
 import Lists from "./pages/Lists";
 import Search from "./pages/Search";
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/film/:id" element={<FilmDetail />} />
+          <Route path="/person/:id" element={<PersonDetail />} />
           <Route path="/diary" element={<Diary />} />
           <Route path="/lists" element={<Lists />} />
           <Route path="/search" element={<Search />} />

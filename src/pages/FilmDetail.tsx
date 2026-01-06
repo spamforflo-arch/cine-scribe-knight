@@ -23,8 +23,12 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { VideoPlayer } from "@/components/watch/VideoPlayer";
 import { EpisodeSelector } from "@/components/watch/EpisodeSelector";
 
-interface CastMember {
+interface PersonRef {
+  id: number;
   name: string;
+}
+
+interface CastMember extends PersonRef {
   character: string;
   profile: string | null;
 }
@@ -49,7 +53,7 @@ interface MovieDetail {
   rating: number;
   synopsis: string;
   genres: string[];
-  director: string;
+  director: PersonRef | null;
   cast: CastMember[];
   runtime: number;
   reviewCount: number;
@@ -371,10 +375,19 @@ const FilmDetail = () => {
               </h1>
               <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
                 <span className="text-lg font-medium text-foreground">{film.year}</span>
-                {film.director && (
+                {film.director?.name && (
                   <>
                     <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-                    <span>{currentMediaType !== 'movie' ? 'Created by' : 'Directed by'} {film.director}</span>
+                    <span>
+                      {currentMediaType !== 'movie' ? 'Created by' : 'Directed by'}{" "}
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/person/${film.director!.id}`)}
+                        className="font-medium text-foreground hover:text-primary transition-colors"
+                      >
+                        {film.director!.name}
+                      </button>
+                    </span>
                   </>
                 )}
                 {film.runtime > 0 && currentMediaType === 'movie' && (
@@ -499,9 +512,11 @@ const FilmDetail = () => {
                 <h2 className="font-display text-xl font-semibold text-foreground">Cast</h2>
                 <div className="flex flex-wrap gap-3">
                   {film.cast.map((actor) => (
-                    <div 
-                      key={actor.name} 
-                      className="flex items-center gap-3 px-4 py-2 bg-secondary rounded-xl hover:bg-primary/10 transition-colors"
+                    <button
+                      key={actor.id}
+                      type="button"
+                      onClick={() => navigate(`/person/${actor.id}`)}
+                      className="flex items-center gap-3 px-4 py-2 bg-secondary rounded-xl hover:bg-primary/10 transition-colors text-left"
                     >
                       {actor.profile ? (
                         <img src={actor.profile} alt={actor.name} className="w-10 h-10 rounded-full object-cover" />
@@ -514,7 +529,7 @@ const FilmDetail = () => {
                         <p className="text-sm font-medium text-foreground">{actor.name}</p>
                         <p className="text-xs text-muted-foreground">{actor.character}</p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
