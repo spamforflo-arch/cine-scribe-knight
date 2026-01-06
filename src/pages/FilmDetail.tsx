@@ -22,6 +22,7 @@ import {
 import { AppHeader } from "@/components/layout/AppHeader";
 import { VideoPlayer } from "@/components/watch/VideoPlayer";
 import { EpisodeSelector } from "@/components/watch/EpisodeSelector";
+import { getContinueWatching } from "@/lib/watchProgress";
 
 interface PersonRef {
   id: number;
@@ -96,6 +97,9 @@ const FilmDetail = () => {
   const [currentEpisode, setCurrentEpisode] = useState(initialEpisode || 1);
   const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState("");
   const [totalEpisodesInSeason, setTotalEpisodesInSeason] = useState(0);
+  
+  // Get last watched progress for this show
+  const lastWatchedProgress = getContinueWatching().find(p => p.tmdbId === tmdbId);
 
   // Get saved rating
   useEffect(() => {
@@ -436,15 +440,33 @@ const FilmDetail = () => {
 
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
+              {/* Continue Episode Button for TV/Anime */}
+              {lastWatchedProgress && currentMediaType !== 'movie' && (
+                <Button 
+                  variant="blue" 
+                  size="lg" 
+                  className="gap-2 click-bounce"
+                  onClick={() => {
+                    setCurrentSeason(lastWatchedProgress.season || 1);
+                    setCurrentEpisode(lastWatchedProgress.episode || 1);
+                    setCurrentEpisodeTitle(lastWatchedProgress.episodeTitle || '');
+                    setShowPlayer(true);
+                  }}
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  Continue S{lastWatchedProgress.season} E{lastWatchedProgress.episode}
+                </Button>
+              )}
+              
               {/* Watch Button */}
               <Button 
-                variant="blue" 
+                variant={lastWatchedProgress && currentMediaType !== 'movie' ? "glass" : "blue"} 
                 size="lg" 
                 className="gap-2 click-bounce"
                 onClick={handleWatch}
               >
                 <Play className="w-5 h-5 fill-current" />
-                {currentMediaType === 'movie' ? 'Watch Now' : 'Watch'}
+                {currentMediaType === 'movie' ? 'Watch Now' : lastWatchedProgress ? 'Start Over' : 'Watch'}
               </Button>
               
               {film.trailerKey && (

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, ChevronLeft } from "lucide-react";
+import { Loader2, ChevronLeft, Film, Tv } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { FilmCard } from "@/components/films/FilmCard";
+import { cn } from "@/lib/utils";
 
 type FilmographyItem = {
   id: string;
@@ -27,6 +28,8 @@ type PersonResult = {
   filmography: FilmographyItem[];
 };
 
+type FilterType = 'all' | 'movies' | 'tv';
+
 export default function PersonDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -34,6 +37,7 @@ export default function PersonDetail() {
   const [data, setData] = useState<PersonResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>('all');
 
   useEffect(() => {
     const run = async () => {
@@ -67,6 +71,12 @@ export default function PersonDetail() {
     () => (data?.filmography || []).filter((i) => i.mediaType === 'tv'),
     [data]
   );
+  
+  const filteredContent = useMemo(() => {
+    if (filter === 'movies') return movies;
+    if (filter === 'tv') return tv;
+    return data?.filmography || [];
+  }, [data, filter, movies, tv]);
 
   if (loading) {
     return (
@@ -95,74 +105,92 @@ export default function PersonDetail() {
   return (
     <div className="min-h-screen bg-background grain">
       <AppHeader />
-      <main className="pt-20 pb-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-3 mb-6">
-            <Button variant="glass" size="sm" className="gap-2" onClick={() => navigate(-1)}>
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </Button>
+      
+      {/* Hero Section with Profile */}
+      <section className="relative pt-20 pb-8">
+        <div className="absolute inset-0 h-64 bg-gradient-to-b from-primary/10 to-transparent" />
+        <div className="container mx-auto px-4 relative">
+          <Button variant="glass" size="sm" className="gap-2 mb-6" onClick={() => navigate(-1)}>
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </Button>
+          
+          <div className="flex flex-col items-center text-center">
+            {/* Profile Image */}
+            <div className="w-36 h-36 rounded-full overflow-hidden bg-secondary ring-4 ring-background shadow-2xl mb-4">
+              {data.person.profile ? (
+                <img
+                  src={data.person.profile}
+                  alt={data.person.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-muted-foreground">
+                  {data.person.name.charAt(0)}
+                </div>
+              )}
+            </div>
+            
+            <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">{data.person.name}</h1>
+            {data.person.department && (
+              <p className="text-primary font-medium mt-1">{data.person.department}</p>
+            )}
+            {data.person.biography && (
+              <p className="text-muted-foreground mt-4 leading-relaxed max-w-2xl text-sm">
+                {data.person.biography.length > 300 
+                  ? `${data.person.biography.slice(0, 300)}...` 
+                  : data.person.biography}
+              </p>
+            )}
+            
+            {/* Filter Buttons */}
+            <div className="flex items-center gap-2 mt-6">
+              <Button
+                variant={filter === 'all' ? 'blue' : 'glass'}
+                size="sm"
+                onClick={() => setFilter('all')}
+              >
+                All ({(data.filmography || []).length})
+              </Button>
+              <Button
+                variant={filter === 'movies' ? 'blue' : 'glass'}
+                size="sm"
+                className="gap-2"
+                onClick={() => setFilter('movies')}
+              >
+                <Film className="w-4 h-4" />
+                Films ({movies.length})
+              </Button>
+              <Button
+                variant={filter === 'tv' ? 'blue' : 'glass'}
+                size="sm"
+                className="gap-2"
+                onClick={() => setFilter('tv')}
+              >
+                <Tv className="w-4 h-4" />
+                TV Shows ({tv.length})
+              </Button>
+            </div>
           </div>
+        </div>
+      </section>
 
-          <header className="flex flex-col sm:flex-row gap-6 sm:items-start mb-10">
-            <div className="shrink-0">
-              <div className="w-32 h-32 rounded-3xl overflow-hidden bg-secondary">
-                {data.person.profile ? (
-                  <img
-                    src={data.person.profile}
-                    alt={data.person.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : null}
-              </div>
+      {/* Filmography Grid */}
+      <main className="pb-16">
+        <div className="container mx-auto px-4">
+          {filteredContent.length > 0 ? (
+            <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
+              {filteredContent.map((item) => (
+                <FilmCard
+                  key={`${item.mediaType}-${item.id}`}
+                  film={item}
+                  size="sm"
+                  showRating
+                />
+              ))}
             </div>
-            <div className="min-w-0">
-              <h1 className="font-display text-4xl font-bold text-foreground">{data.person.name}</h1>
-              {data.person.department && (
-                <p className="text-muted-foreground mt-1">{data.person.department}</p>
-              )}
-              {data.person.biography && (
-                <p className="text-muted-foreground mt-4 leading-relaxed max-w-3xl">
-                  {data.person.biography}
-                </p>
-              )}
-            </div>
-          </header>
-
-          {movies.length > 0 && (
-            <section className="space-y-4">
-              <h2 className="font-display text-2xl font-bold text-foreground">Movies</h2>
-              <div className="flex flex-wrap gap-4 md:gap-6 justify-center sm:justify-start">
-                {movies.map((item) => (
-                  <FilmCard
-                    key={`${item.mediaType}-${item.id}`}
-                    film={item}
-                    size="sm"
-                    showRating
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {tv.length > 0 && (
-            <section className="space-y-4 mt-12">
-              <h2 className="font-display text-2xl font-bold text-foreground">TV Shows</h2>
-              <div className="flex flex-wrap gap-4 md:gap-6 justify-center sm:justify-start">
-                {tv.map((item) => (
-                  <FilmCard
-                    key={`${item.mediaType}-${item.id}`}
-                    film={item}
-                    size="sm"
-                    showRating
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {movies.length === 0 && tv.length === 0 && (
+          ) : (
             <div className="text-center py-16">
               <p className="text-muted-foreground">No filmography available.</p>
             </div>
