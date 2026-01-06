@@ -351,13 +351,64 @@ serve(async (req) => {
     if (sortBy === "trending") {
       // Use trending endpoint for trending sort
       const mediaType = category === "films" ? "movie" : "tv";
-      const langParam = language ? `&language=${language}` : '';
       
       if (category === "anime") {
         // For anime, we still need discover to filter by origin country
         sortParam = "popularity.desc";
       } else {
-        const trendingEndpoint = `${TMDB_BASE_URL}/trending/${mediaType}/week?api_key=${TMDB_API_KEY}&page=${page}${langParam}`;
+        // For language-specific trending, use discover with popularity sort instead
+        // as trending endpoint doesn't support language filtering well
+        if (language) {
+          // Use discover endpoint with popularity sort for language filtering
+          const discoverMediaType = category === "films" ? "movie" : "tv";
+          const genreId = genre ? (category === "films" ? genreMap[genre] : tvGenreMap[genre]) : undefined;
+          const genreFilter = genreId ? `&with_genres=${genreId}` : '';
+          const discoverEndpoint = `${TMDB_BASE_URL}/discover/${discoverMediaType}?api_key=${TMDB_API_KEY}&sort_by=popularity.desc&with_original_language=${language}${genreFilter}&vote_count.gte=1&page=${page}&include_adult=false`;
+          
+          console.log(`Fetching language-specific content from: ${discoverEndpoint.replace(TMDB_API_KEY, "***")}`);
+          
+          const response = await fetch(discoverEndpoint);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("TMDB API error:", response.status, errorText);
+            throw new Error(`TMDB API error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          // For language-specific, use less strict filtering
+          let filteredResults = (data.results || []).filter((item: any) => {
+            if (item.adult === true) return false;
+            if (!item.poster_path) return false;
+            return true;
+          });
+          
+          const results = filteredResults.map((item: any) => ({
+            id: `tmdb-${item.id}`,
+            tmdbId: item.id,
+            title: item.title || item.name,
+            year: new Date(item.release_date || item.first_air_date || "").getFullYear() || 0,
+            poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+            backdrop: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
+            rating: Math.round((item.vote_average / 2) * 10) / 10,
+            synopsis: item.overview,
+            genres: [genre],
+            director: "",
+            cast: [],
+            runtime: 0,
+            reviewCount: item.vote_count,
+            mediaType: category === 'films' ? 'movie' : category === 'anime' ? 'anime' : 'tv',
+          })).filter((item: any) => item.year > 0) || [];
+
+          console.log(`Returning ${results.length} language-filtered results, page ${page}, total pages: ${data.total_pages}`);
+
+          return new Response(JSON.stringify({ results, totalPages: data.total_pages, currentPage: page }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+        const trendingEndpoint = `${TMDB_BASE_URL}/trending/${mediaType}/week?api_key=${TMDB_API_KEY}&page=${page}`;
         console.log(`Fetching trending from: ${trendingEndpoint.replace(TMDB_API_KEY, "***")}`);
         
         const response = await fetch(trendingEndpoint);
@@ -371,11 +422,6 @@ serve(async (req) => {
         const data = await response.json();
         
         let filteredResults = filterContent(data.results || []);
-        
-        // Apply language filter if specified
-        if (language) {
-          filteredResults = filteredResults.filter((item: any) => item.original_language === language);
-        }
         
         // Apply genre filter if specified
         if (genre) {
