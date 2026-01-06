@@ -13,7 +13,7 @@ type SearchResult = {
   year: number;
   poster: string | null;
   rating: number;
-  mediaType: string;
+  mediaType: 'movie' | 'tv';
 };
 
 const Search = () => {
@@ -106,6 +106,7 @@ const Search = () => {
                       <Link
                         key={item.id}
                         to={`/film/${item.id}`}
+                        state={{ mediaType: item.mediaType }}
                         className="flex items-center gap-4 p-3 rounded-2xl glass hover:border-primary/30 transition-all click-bounce animate-fade-in"
                         style={{ animationDelay: `${index * 30}ms` }}
                       >
@@ -125,7 +126,7 @@ const Search = () => {
                             {item.title}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            {item.year} • {item.mediaType === 'tv' ? 'TV Show' : item.mediaType === 'anime' ? 'Anime' : 'Movie'}
+                            {item.year} • {item.mediaType === 'tv' ? 'TV Show' : 'Movie'}
                           </p>
                         </div>
                         <div className="flex items-center gap-1 text-primary">

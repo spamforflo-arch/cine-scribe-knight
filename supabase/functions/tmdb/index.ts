@@ -142,6 +142,7 @@ serve(async (req) => {
       ]);
 
       const trailer = videos.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube");
+      const director = credits.crew?.find((c: any) => c.job === "Director");
       
       const filteredSimilar = filterContent(similar.results || []);
       
@@ -155,8 +156,8 @@ serve(async (req) => {
         rating: Math.round((movie.vote_average / 2) * 10) / 10,
         synopsis: movie.overview,
         genres: movie.genres?.map((g: any) => g.name) || [],
-        director: credits.crew?.find((c: any) => c.job === "Director")?.name || "",
-        cast: credits.cast?.slice(0, 10).map((c: any) => ({ name: c.name, character: c.character, profile: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null })) || [],
+        director: director ? { id: director.id, name: director.name } : null,
+        cast: credits.cast?.slice(0, 10).map((c: any) => ({ id: c.id, name: c.name, character: c.character, profile: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null })) || [],
         runtime: movie.runtime || 0,
         reviewCount: movie.vote_count,
         trailer: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
@@ -201,7 +202,7 @@ serve(async (req) => {
       ]);
 
       const trailer = videos.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube");
-      const creator = tv.created_by?.[0]?.name || "";
+      const creator = tv.created_by?.[0] || null;
       
       const filteredSimilar = filterContent(similar.results || []);
       
@@ -215,8 +216,8 @@ serve(async (req) => {
         rating: Math.round((tv.vote_average / 2) * 10) / 10,
         synopsis: tv.overview,
         genres: tv.genres?.map((g: any) => g.name) || [],
-        director: creator,
-        cast: credits.cast?.slice(0, 10).map((c: any) => ({ name: c.name, character: c.character, profile: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null })) || [],
+        director: creator ? { id: creator.id, name: creator.name } : null,
+        cast: credits.cast?.slice(0, 10).map((c: any) => ({ id: c.id, name: c.name, character: c.character, profile: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null })) || [],
         runtime: tv.episode_run_time?.[0] || 0,
         reviewCount: tv.vote_count,
         trailer: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
@@ -268,6 +269,73 @@ serve(async (req) => {
 
       console.log(`Returning ${episodes.length} episodes`);
       return new Response(JSON.stringify({ episodes }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Handle person detail + filmography request
+    if (action === "getPersonDetail" && body.personId) {
+      const personId = body.personId;
+      console.log(`Fetching person detail for ID: ${personId}`);
+
+      const [personRes, creditsRes] = await Promise.all([
+        fetch(`${TMDB_BASE_URL}/person/${personId}?api_key=${TMDB_API_KEY}`),
+        fetch(`${TMDB_BASE_URL}/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`),
+      ]);
+
+      if (!personRes.ok) {
+        throw new Error(`Person not found: ${personRes.status}`);
+      }
+
+      const person = await personRes.json();
+      const credits = creditsRes.ok ? await creditsRes.json() : { cast: [], crew: [] };
+
+      const merged: any[] = [...(credits.cast || []), ...(credits.crew || [])]
+        .filter((item: any) => item && (item.media_type === "movie" || item.media_type === "tv"))
+        .filter((item: any) => {
+          if (item.adult === true) return false;
+          if (!item.poster_path) return false;
+
+          const title = (item.title || item.name || '').toLowerCase();
+          const overview = (item.overview || '').toLowerCase();
+          for (const keyword of blockedKeywords) {
+            if (title.includes(keyword) || overview.includes(keyword)) return false;
+          }
+          return true;
+        });
+
+      // de-dupe by media_type + id (cast/crew can overlap)
+      const byKey = new Map<string, any>();
+      for (const item of merged) {
+        const k = `${item.media_type}-${item.id}`;
+        if (!byKey.has(k)) byKey.set(k, item);
+      }
+
+      const filmography = Array.from(byKey.values())
+        .map((item: any) => ({
+          id: `tmdb-${item.id}`,
+          tmdbId: item.id,
+          title: item.title || item.name,
+          year: new Date(item.release_date || item.first_air_date || "").getFullYear() || 0,
+          poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+          rating: Math.round((item.vote_average / 2) * 10) / 10,
+          mediaType: item.media_type,
+        }))
+        .filter((i: any) => i.year > 0)
+        .sort((a: any, b: any) => b.year - a.year);
+
+      const result = {
+        person: {
+          id: person.id,
+          name: person.name,
+          profile: person.profile_path ? `https://image.tmdb.org/t/p/w300${person.profile_path}` : null,
+          biography: person.biography || "",
+          department: person.known_for_department || "",
+        },
+        filmography,
+      };
+
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -355,12 +423,12 @@ serve(async (req) => {
     if (category === "films") {
       const genreId = genre ? genreMap[genre] : undefined;
       const genreFilter = genreId ? `&with_genres=${genreId}` : '';
-      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}${genreFilter}&without_genres=99&sort_by=${sortParam}&vote_count.gte=20&page=${page}&include_adult=false${langFilter}`;
+      endpoint = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}${genreFilter}&without_genres=99&sort_by=${sortParam}&vote_count.gte=5&page=${page}&include_adult=false${langFilter}`;
     } else if (category === "tv") {
       const genreId = genre ? tvGenreMap[genre] : undefined;
       const genreFilter = genreId ? `&with_genres=${genreId}` : '';
       const tvSortParam = sortBy === "newest" ? "first_air_date.desc" : sortParam;
-      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}${genreFilter}&sort_by=${tvSortParam}&vote_count.gte=10&page=${page}&include_adult=false${langFilter}`;
+      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}${genreFilter}&sort_by=${tvSortParam}&vote_count.gte=5&page=${page}&include_adult=false${langFilter}`;
     } else if (category === "anime") {
       // For anime, always use Animation genre (16) with origin_country=JP
       const tvAnimeGenreId = genre ? tvGenreMap[genre] : undefined;

@@ -129,7 +129,7 @@ export function VideoPlayer({
   return (
     <div className="fixed inset-0 z-[2147483647] bg-black flex flex-col">
       {/* Header - positioned to not overlap iframe controls */}
-      <div className="flex items-center justify-between p-2 sm:p-3 bg-black shrink-0">
+      <div className="relative z-10 flex items-center justify-between p-2 sm:p-3 bg-black shrink-0">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Button 
             variant="ghost" 
@@ -202,7 +202,7 @@ export function VideoPlayer({
         ref={iframeRef}
         src={getEmbedUrl()}
         className={cn(
-          "flex-1 w-full border-0",
+          "relative z-0 flex-1 w-full border-0",
           loading && "opacity-0"
         )}
         allowFullScreen
