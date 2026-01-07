@@ -83,7 +83,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, category, genre, sortBy = "popularity", movieId, page = 1, query } = body;
+    const { action, category, genre, sortBy = "popularity", movieId, page = 1, query, networkId } = body;
     
     // Handle search request
     if (action === "search" && query) {
@@ -486,6 +486,10 @@ serve(async (req) => {
         // For other genres, search for Japanese animation with that genre
         endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16,${tvAnimeGenreId}&with_origin_country=JP&sort_by=${tvSortParam}&vote_count.gte=5&page=${page}&include_adult=false`;
       }
+    } else if (category === "watch" && networkId) {
+      // For Watch category - discover TV by network (cartoon channels)
+      const tvSortParam = sortBy === "newest" ? "first_air_date.desc" : sortParam;
+      endpoint = `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_networks=${networkId}&sort_by=${tvSortParam}&vote_count.gte=1&page=${page}&include_adult=false`;
     }
 
     console.log(`Fetching from: ${endpoint.replace(TMDB_API_KEY, "***")}`);
@@ -518,7 +522,7 @@ serve(async (req) => {
       runtime: 0,
       reviewCount: item.vote_count,
       mediaType: category === 'films' ? 'movie' : category === 'anime' ? 'anime' : 'tv',
-    })).filter((item: any) => item.year > 0) || [];
+    })).filter((item: any) => item.year > 0 && item.poster) || [];
 
     console.log(`Returning ${results.length} results, page ${page}, total pages: ${data.total_pages}`);
 

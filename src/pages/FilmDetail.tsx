@@ -165,12 +165,8 @@ const FilmDetail = () => {
   }, [id, passedMediaType]);
 
   const handleBack = () => {
-    const browseState = location.state?.browseState;
-    if (browseState) {
-      navigate('/browse', { state: browseState });
-    } else {
-      navigate(-1);
-    }
+    // Always use browser history to go back to exact previous position
+    navigate(-1);
   };
 
   const currentMediaType = film?.mediaType || passedMediaType || 'movie';
