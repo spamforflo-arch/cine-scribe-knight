@@ -15,20 +15,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Cartoon channel network IDs from TMDB
-const cartoonNetworks = [
-  { id: 56, name: "Cartoon Network" },
-  { id: 13, name: "Nickelodeon" },
-  { id: 2, name: "Disney Channel" },
-  { id: 1006, name: "Nick Jr." },
-  { id: 16, name: "PBS Kids" },
-];
-
 const categories = [
   { id: "films", label: "Films", icon: Film },
   { id: "tv", label: "TV Shows", icon: Tv },
   { id: "anime", label: "Anime", icon: Sparkles },
-  { id: "watch", label: "Watch", icon: Tv },
 ];
 
 const genres = [
@@ -84,7 +74,7 @@ const Browse = () => {
   const [selectedGenre, setSelectedGenre] = useState<string | null>(initialState?.genre || null);
   const [sortBy, setSortBy] = useState("trending");
   const [selectedLanguage, setSelectedLanguage] = useState("");
-  const [selectedChannel, setSelectedChannel] = useState<number | null>(null);
+  
   const [content, setContent] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -163,19 +153,9 @@ const Browse = () => {
 
 
   const handleBack = () => {
-    // If we're viewing channel content in Watch, go back to channel selection
-    if (selectedCategory === 'watch' && selectedChannel) {
-      setSelectedChannel(null);
-      setContent([]);
-      setCurrentPage(1);
-      setTotalPages(1);
-      return;
-    }
-    
     if (selectedCategory) {
       setSelectedCategory(null);
       setSelectedGenre(null);
-      setSelectedChannel(null);
       setContent([]);
       setCurrentPage(1);
       setTotalPages(1);
@@ -187,17 +167,14 @@ const Browse = () => {
 
   useEffect(() => {
     if (!selectedCategory) return;
-    
-    // For "watch" category, require a channel selection first
-    if (selectedCategory === 'watch' && !selectedChannel) return;
 
-    const key = `${selectedCategory}|${selectedGenre || 'all'}|${sortBy}|${selectedLanguage}|${selectedChannel || 'none'}`;
+    const key = `${selectedCategory}|${selectedGenre || 'all'}|${sortBy}|${selectedLanguage}`;
     if (restoredKeyRef.current === key) return;
 
     setContent([]);
     setCurrentPage(1);
     fetchContent(1, true);
-  }, [selectedCategory, selectedGenre, sortBy, selectedLanguage, selectedChannel]);
+  }, [selectedCategory, selectedGenre, sortBy, selectedLanguage]);
 
 
   const fetchContent = async (page: number, reset: boolean = false) => {
@@ -217,7 +194,6 @@ const Browse = () => {
           sortBy, 
           page, 
           language: selectedLanguage,
-          networkId: selectedCategory === 'watch' ? selectedChannel : undefined,
         }
       });
 
@@ -327,44 +303,13 @@ const Browse = () => {
             </div>
           )}
 
-          {/* Channel Selection for Watch Category */}
-          {selectedCategory === 'watch' && !selectedChannel && (
-            <div className="space-y-8 animate-fade-in">
-              <div className="text-center space-y-4">
-                <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-                  Choose a Channel
-                </h1>
-                <p className="text-muted-foreground">Select a cartoon channel to browse</p>
-              </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 max-w-4xl mx-auto mt-8">
-                {cartoonNetworks.map((network, index) => (
-                  <button
-                    key={network.id}
-                    onClick={() => setSelectedChannel(network.id)}
-                    className="group glass rounded-xl p-6 flex flex-col items-center gap-3 hover:border-primary/50 transition-all duration-300 click-scale animate-slide-up"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="w-14 h-14 rounded-xl blue-gradient flex items-center justify-center shadow-lg shadow-primary/30 group-hover:shadow-primary/50 group-hover:scale-110 transition-all duration-300">
-                      <Tv className="w-7 h-7 text-white" />
-                    </div>
-                    <span className="font-display text-sm font-semibold text-foreground group-hover:text-primary transition-colors text-center">
-                      {network.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Content Grid with Filters */}
-          {selectedCategory && (selectedCategory !== 'watch' || selectedChannel) && (
+          {selectedCategory && (
             <div className="space-y-8 animate-fade-in">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-                  {selectedCategory === 'watch' 
-                    ? cartoonNetworks.find(n => n.id === selectedChannel)?.name 
-                    : (selectedGenre ? `${selectedGenre} ` : '') + categories.find(c => c.id === selectedCategory)?.label}
+                  {(selectedGenre ? `${selectedGenre} ` : '') + categories.find(c => c.id === selectedCategory)?.label}
                 </h1>
                 
                 {/* Sort and Filter */}
@@ -389,59 +334,55 @@ const Browse = () => {
                   {/* Continue Watching Button */}
                   <ContinueWatchingSheet />
                   
-                  {/* Genre Filter Dropdown - hide for Watch category */}
-                  {selectedCategory !== 'watch' && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="glass" size="sm" className="gap-2">
-                          <SlidersHorizontal className="w-4 h-4" />
-                          {selectedGenre || "Genre"}
-                          <ChevronDown className="w-3 h-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-secondary border-border max-h-80 overflow-y-auto">
-                        <DropdownMenuItem 
-                          onClick={() => setSelectedGenre(null)}
-                          className={cn(!selectedGenre && "bg-primary/20")}
+                  {/* Genre Filter Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="glass" size="sm" className="gap-2">
+                        <SlidersHorizontal className="w-4 h-4" />
+                        {selectedGenre || "Genre"}
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-secondary border-border max-h-80 overflow-y-auto">
+                      <DropdownMenuItem 
+                        onClick={() => setSelectedGenre(null)}
+                        className={cn(!selectedGenre && "bg-primary/20")}
+                      >
+                        All Genres
+                      </DropdownMenuItem>
+                      {genres.map((genre) => (
+                        <DropdownMenuItem
+                          key={genre}
+                          onClick={() => setSelectedGenre(genre)}
+                          className={cn(selectedGenre === genre && "bg-primary/20")}
                         >
-                          All Genres
+                          {genre}
                         </DropdownMenuItem>
-                        {genres.map((genre) => (
-                          <DropdownMenuItem
-                            key={genre}
-                            onClick={() => setSelectedGenre(genre)}
-                            className={cn(selectedGenre === genre && "bg-primary/20")}
-                          >
-                            {genre}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                  {/* Language Filter Dropdown - hide for Watch category */}
-                  {selectedCategory !== 'watch' && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="glass" size="sm" className="gap-2">
-                          <Globe className="w-4 h-4" />
-                          {languages.find(l => l.code === selectedLanguage)?.label || "Language"}
-                          <ChevronDown className="w-3 h-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-secondary border-border max-h-80 overflow-y-auto">
-                        {languages.map((lang) => (
-                          <DropdownMenuItem
-                            key={lang.code}
-                            onClick={() => setSelectedLanguage(lang.code)}
-                            className={cn(selectedLanguage === lang.code && "bg-primary/20")}
-                          >
-                            {lang.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                  {/* Language Filter Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="glass" size="sm" className="gap-2">
+                        <Globe className="w-4 h-4" />
+                        {languages.find(l => l.code === selectedLanguage)?.label || "Language"}
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-secondary border-border max-h-80 overflow-y-auto">
+                      {languages.map((lang) => (
+                        <DropdownMenuItem
+                          key={lang.code}
+                          onClick={() => setSelectedLanguage(lang.code)}
+                          className={cn(selectedLanguage === lang.code && "bg-primary/20")}
+                        >
+                          {lang.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
