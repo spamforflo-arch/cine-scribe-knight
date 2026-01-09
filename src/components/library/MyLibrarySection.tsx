@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MovieUploadDialog } from "./MovieUploadDialog";
 import { UserMovieCard } from "./UserMovieCard";
 import { UserMoviePlayer } from "./UserMoviePlayer";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Film, ChevronRight, Library } from "lucide-react";
+import { Film, ChevronRight, Tv } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UserMovie {
@@ -57,10 +56,10 @@ export function MyLibrarySection() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-primary/10">
-            <Library className="w-5 h-5 text-primary" />
+            <Tv className="w-5 h-5 text-primary" />
           </div>
           <h2 className="font-display text-2xl font-bold text-foreground">
-            My Library
+            Self Streaming
           </h2>
         </div>
         <MovieUploadDialog onMovieAdded={fetchMovies} />
@@ -79,7 +78,7 @@ export function MyLibrarySection() {
           <h3 className="font-medium text-foreground mb-2">Your library is empty</h3>
           <p className="text-sm text-muted-foreground max-w-sm">
             Add your own movies to create a personal streaming collection. 
-            Upload videos and organize them by genre.
+            Search by title and we'll auto-fetch the poster and genre.
           </p>
         </div>
       ) : (

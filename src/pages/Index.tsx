@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Compass, BookOpen } from "lucide-react";
+import { Compass, BookOpen, Tv } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { MyLibrarySection } from "@/components/library/MyLibrarySection";
 
 const Index = () => {
   return (
@@ -38,12 +37,13 @@ const Index = () => {
                   View Diary
                 </Button>
               </Link>
+              <Link to="/self-streaming">
+                <Button variant="glass" size="xl" className="gap-3 min-w-[200px] click-scale">
+                  <Tv className="w-6 h-6" />
+                  Self Streaming
+                </Button>
+              </Link>
             </div>
-          </div>
-
-          {/* My Library Section */}
-          <div className="mt-16 border-t border-border/30 pt-12">
-            <MyLibrarySection />
           </div>
         </div>
       </main>
