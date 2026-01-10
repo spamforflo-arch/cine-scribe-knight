@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      user_episodes: {
+        Row: {
+          created_at: string
+          episode_number: number
+          id: string
+          season_number: number
+          series_id: string
+          title: string | null
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          episode_number?: number
+          id?: string
+          season_number?: number
+          series_id: string
+          title?: string | null
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          episode_number?: number
+          id?: string
+          season_number?: number
+          series_id?: string
+          title?: string | null
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_episodes_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "user_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_movies: {
         Row: {
           created_at: string
@@ -49,6 +90,42 @@ export type Database = {
           title?: string
           updated_at?: string
           video_url?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
+      user_series: {
+        Row: {
+          created_at: string
+          description: string | null
+          genre: string
+          id: string
+          poster_url: string | null
+          title: string
+          tmdb_id: number | null
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          genre?: string
+          id?: string
+          poster_url?: string | null
+          title: string
+          tmdb_id?: number | null
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          genre?: string
+          id?: string
+          poster_url?: string | null
+          title?: string
+          tmdb_id?: number | null
+          updated_at?: string
           year?: number | null
         }
         Relationships: []
