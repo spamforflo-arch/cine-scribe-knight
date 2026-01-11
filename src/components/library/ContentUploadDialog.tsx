@@ -182,24 +182,33 @@ export function ContentUploadDialog({
   };
 
   const handleSubmitMovie = async () => {
-    if (!selectedContent || !videoFile) {
-      toast.error("Please select a movie and provide a video file");
+    if (!selectedContent) {
+      toast.error("Please select a movie from search results");
       return;
     }
+
+    // Video file is optional when adding from Browse
+    const hasVideoFile = !!videoFile;
 
     setLoading(true);
 
     try {
-      const videoFileName = `${Date.now()}-${videoFile.name}`;
-      const { error: videoError } = await supabase.storage
-        .from("movies")
-        .upload(`videos/${videoFileName}`, videoFile);
+      let videoUrl = "";
 
-      if (videoError) throw videoError;
+      if (hasVideoFile) {
+        const videoFileName = `${Date.now()}-${videoFile!.name}`;
+        const { error: videoError } = await supabase.storage
+          .from("movies")
+          .upload(`videos/${videoFileName}`, videoFile!);
 
-      const { data: videoUrlData } = supabase.storage
-        .from("movies")
-        .getPublicUrl(`videos/${videoFileName}`);
+        if (videoError) throw videoError;
+
+        const { data: videoUrlData } = supabase.storage
+          .from("movies")
+          .getPublicUrl(`videos/${videoFileName}`);
+
+        videoUrl = videoUrlData.publicUrl;
+      }
 
       const primaryGenre = selectedContent.genres?.[0] || "Uncategorized";
 
@@ -207,18 +216,20 @@ export function ContentUploadDialog({
         title: selectedContent.title,
         genre: primaryGenre,
         year: selectedContent.year || null,
-        video_url: videoUrlData.publicUrl,
+        video_url: videoUrl || "pending", // Use "pending" if no file uploaded
         poster_url: selectedContent.poster,
       });
 
       if (dbError) throw dbError;
 
-      toast.success("Movie added to your library!");
+      toast.success(hasVideoFile 
+        ? "Movie added to your library!" 
+        : "Movie added! You can add the video file later.");
       handleClose();
       onContentAdded();
     } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload movie");
+      toast.error(error.message || "Failed to add movie");
     } finally {
       setLoading(false);
     }
@@ -231,10 +242,8 @@ export function ContentUploadDialog({
     }
 
     const validEpisodes = episodes.filter(ep => ep.file);
-    if (validEpisodes.length === 0) {
-      toast.error("Please add at least one episode with a video file");
-      return;
-    }
+    // Allow adding series without episodes when coming from Browse
+    const isFromBrowse = !!initialTMDBData;
 
     setLoading(true);
 
@@ -256,7 +265,7 @@ export function ContentUploadDialog({
 
       if (seriesError) throw seriesError;
 
-      // Upload episodes
+      // Upload episodes if any
       for (const ep of validEpisodes) {
         if (!ep.file) continue;
 
@@ -282,12 +291,15 @@ export function ContentUploadDialog({
         if (epError) throw epError;
       }
 
-      toast.success(`Series "${selectedContent.title}" added with ${validEpisodes.length} episode(s)!`);
+      const episodeMsg = validEpisodes.length > 0 
+        ? ` with ${validEpisodes.length} episode(s)` 
+        : ". You can add episodes later.";
+      toast.success(`Series "${selectedContent.title}" added${episodeMsg}`);
       handleClose();
       onContentAdded();
     } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload series");
+      toast.error(error.message || "Failed to add series");
     } finally {
       setLoading(false);
     }
@@ -402,7 +414,9 @@ export function ContentUploadDialog({
 
           <TabsContent value="movie" className="space-y-4 mt-0">
             <div className="space-y-2">
-              <Label htmlFor="video">Video File *</Label>
+              <Label htmlFor="video">
+                Video File {initialTMDBData ? "(optional)" : "*"}
+              </Label>
               <Input
                 id="video"
                 type="file"
@@ -413,11 +427,15 @@ export function ContentUploadDialog({
                   "file:bg-primary/10 file:text-primary file:text-sm file:font-medium",
                   "cursor-pointer"
                 )}
-                required
               />
               {videoFile && (
                 <p className="text-xs text-muted-foreground">
                   Selected: {videoFile.name}
+                </p>
+              )}
+              {initialTMDBData && !videoFile && (
+                <p className="text-xs text-muted-foreground">
+                  You can add the video file later from your library.
                 </p>
               )}
             </div>
@@ -430,12 +448,12 @@ export function ContentUploadDialog({
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Uploading...
+                  Adding...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4" />
-                  Upload Movie
+                  <Plus className="w-4 h-4" />
+                  Add to Library
                 </>
               )}
             </Button>
@@ -521,12 +539,12 @@ export function ContentUploadDialog({
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Uploading...
+                  Adding...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4" />
-                  Upload Series
+                  <Plus className="w-4 h-4" />
+                  Add to Library
                 </>
               )}
             </Button>
