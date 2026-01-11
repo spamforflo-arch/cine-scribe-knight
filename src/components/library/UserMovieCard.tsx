@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Play, Trash2, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getProgressForContent, SelfStreamingProgress } from "@/lib/selfStreamingProgress";
+import { Progress } from "@/components/ui/progress";
 
 interface UserMovie {
   id: string;
@@ -33,6 +35,14 @@ interface UserMovieCardProps {
 export function UserMovieCard({ movie, onDelete, onPlay }: UserMovieCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [watchProgress, setWatchProgress] = useState<SelfStreamingProgress | null>(null);
+
+  useEffect(() => {
+    const progress = getProgressForContent(movie.id);
+    if (progress) {
+      setWatchProgress(progress);
+    }
+  }, [movie.id]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -75,6 +85,13 @@ export function UserMovieCard({ movie, onDelete, onPlay }: UserMovieCardProps) {
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-muted">
               <Film className="w-12 h-12 text-muted-foreground" />
+            </div>
+          )}
+
+          {/* Progress bar at bottom */}
+          {watchProgress && watchProgress.progress > 0 && watchProgress.progress < 95 && (
+            <div className="absolute bottom-0 left-0 right-0">
+              <Progress value={watchProgress.progress} className="h-1 rounded-none bg-black/50" />
             </div>
           )}
 
