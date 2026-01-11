@@ -1,7 +1,12 @@
+import { useRef, useEffect, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+  getProgressForContent, 
+  saveSelfStreamingProgress 
+} from "@/lib/selfStreamingProgress";
 
 interface UserEpisode {
   id: string;
@@ -31,6 +36,56 @@ interface SeriesPlayerProps {
 }
 
 export function SeriesPlayer({ series, currentEpisode, open, onClose, onEpisodeChange }: SeriesPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const saveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const saveProgress = useCallback(() => {
+    if (!series || !currentEpisode || !videoRef.current) return;
+    
+    const video = videoRef.current;
+    if (video.duration && video.currentTime > 0) {
+      const progress = (video.currentTime / video.duration) * 100;
+      saveSelfStreamingProgress({
+        contentId: series.id,
+        contentType: 'series',
+        title: series.title,
+        poster: series.poster_url,
+        progress,
+        currentTime: video.currentTime,
+        duration: video.duration,
+        lastWatched: new Date().toISOString(),
+        episodeId: currentEpisode.id,
+        seasonNumber: currentEpisode.season_number,
+        episodeNumber: currentEpisode.episode_number,
+        episodeTitle: currentEpisode.title || undefined,
+      });
+    }
+  }, [series, currentEpisode]);
+
+  useEffect(() => {
+    if (open && series && currentEpisode && videoRef.current) {
+      // Restore progress for this specific episode
+      const saved = getProgressForContent(series.id, currentEpisode.id);
+      if (saved && saved.currentTime > 0) {
+        videoRef.current.currentTime = saved.currentTime;
+      }
+
+      // Start saving progress every 5 seconds
+      saveIntervalRef.current = setInterval(saveProgress, 5000);
+    }
+
+    return () => {
+      if (saveIntervalRef.current) {
+        clearInterval(saveIntervalRef.current);
+      }
+    };
+  }, [open, series, currentEpisode, saveProgress]);
+
+  const handleClose = () => {
+    saveProgress();
+    onClose();
+  };
+
   if (!series || !currentEpisode) return null;
 
   // Group episodes by season
@@ -60,26 +115,33 @@ export function SeriesPlayer({ series, currentEpisode, open, onClose, onEpisodeC
   const hasNext = currentIndex < allEpisodesSorted.length - 1;
 
   const handlePrev = () => {
+    saveProgress();
     if (hasPrev) {
       onEpisodeChange(allEpisodesSorted[currentIndex - 1]);
     }
   };
 
   const handleNext = () => {
+    saveProgress();
     if (hasNext) {
       onEpisodeChange(allEpisodesSorted[currentIndex + 1]);
     }
   };
 
+  const handleEpisodeSelect = (ep: UserEpisode) => {
+    saveProgress();
+    onEpisodeChange(ep);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="max-w-6xl w-[95vw] p-0 bg-black border-none overflow-hidden">
         <div className="relative">
           {/* Close Button */}
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
           >
             <X className="w-6 h-6" />
@@ -88,11 +150,14 @@ export function SeriesPlayer({ series, currentEpisode, open, onClose, onEpisodeC
           {/* Video Player */}
           <div className="aspect-video bg-black">
             <video
+              ref={videoRef}
               key={currentEpisode.video_url}
               src={currentEpisode.video_url}
               controls
               autoPlay
               className="w-full h-full"
+              onPause={saveProgress}
+              onEnded={saveProgress}
             />
           </div>
 
@@ -141,7 +206,7 @@ export function SeriesPlayer({ series, currentEpisode, open, onClose, onEpisodeC
                         key={ep.id}
                         variant={ep.id === currentEpisode.id ? "blue" : "outline"}
                         size="sm"
-                        onClick={() => onEpisodeChange(ep)}
+                        onClick={() => handleEpisodeSelect(ep)}
                         className={cn(
                           "h-8",
                           ep.id === currentEpisode.id && "ring-2 ring-primary"

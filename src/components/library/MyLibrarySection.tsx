@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ContentUploadDialog } from "./ContentUploadDialog";
 import { UserMovieCard } from "./UserMovieCard";
 import { UserMoviePlayer } from "./UserMoviePlayer";
 import { SeriesCard } from "./SeriesCard";
 import { SeriesPlayer } from "./SeriesPlayer";
-import { Film, ChevronRight, Tv, MoreVertical, Plus } from "lucide-react";
+import { Film, ChevronRight, Tv, MoreVertical, Plus, Search, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { getContinueWatchingSelfStreaming, SelfStreamingProgress } from "@/lib/selfStreamingProgress";
+import { Progress } from "@/components/ui/progress";
 
 interface UserMovie {
   id: string;
@@ -45,6 +50,7 @@ interface UserEpisode {
 }
 
 export function MyLibrarySection() {
+  const navigate = useNavigate();
   const [movies, setMovies] = useState<UserMovie[]>([]);
   const [series, setSeries] = useState<UserSeries[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +58,7 @@ export function MyLibrarySection() {
   const [playingSeries, setPlayingSeries] = useState<UserSeries | null>(null);
   const [playingEpisode, setPlayingEpisode] = useState<UserEpisode | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [continueWatching, setContinueWatching] = useState<SelfStreamingProgress[]>([]);
 
   const fetchContent = async () => {
     setLoading(true);
@@ -79,12 +86,20 @@ export function MyLibrarySection() {
       setSeries(seriesData as any);
     }
 
+    // Update continue watching
+    setContinueWatching(getContinueWatchingSelfStreaming());
+
     setLoading(false);
   };
 
   useEffect(() => {
     fetchContent();
   }, []);
+
+  // Update continue watching when players close
+  const updateContinueWatching = () => {
+    setContinueWatching(getContinueWatchingSelfStreaming());
+  };
 
   // Group content by genre
   const allContent = [
@@ -106,6 +121,21 @@ export function MyLibrarySection() {
   const handlePlaySeries = (s: UserSeries, episode?: UserEpisode) => {
     setPlayingSeries(s);
     setPlayingEpisode(episode || s.episodes?.[0] || null);
+  };
+
+  const handleContinueWatchingClick = (item: SelfStreamingProgress) => {
+    if (item.contentType === 'movie') {
+      const movie = movies.find(m => m.id === item.contentId);
+      if (movie) setPlayingMovie(movie);
+    } else {
+      const s = series.find(s => s.id === item.contentId);
+      if (s) {
+        const episode = item.episodeId 
+          ? s.episodes.find(ep => ep.id === item.episodeId) 
+          : s.episodes[0];
+        handlePlaySeries(s, episode);
+      }
+    }
   };
 
   return (
@@ -133,6 +163,11 @@ export function MyLibrarySection() {
               <Plus className="w-4 h-4" />
               Add Content
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/browse')} className="gap-2">
+              <Search className="w-4 h-4" />
+              Add from Browse
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -152,13 +187,80 @@ export function MyLibrarySection() {
             Add your own movies and TV series to create a personal streaming collection. 
             Search by title and we'll auto-fetch the poster and genre.
           </p>
-          <Button variant="blue" onClick={() => setUploadDialogOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Content
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="blue" onClick={() => setUploadDialogOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Add Content
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/browse')} className="gap-2">
+              <Search className="w-4 h-4" />
+              Browse Catalog
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="space-y-8">
+          {/* Continue Watching Section */}
+          {continueWatching.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Play className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-lg text-foreground">Continue Watching</h3>
+              </div>
+              
+              <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+                {continueWatching.map((item, index) => (
+                  <div
+                    key={`${item.contentId}-${item.episodeId || 'movie'}`}
+                    className="shrink-0 w-[140px] md:w-[160px] animate-fade-in cursor-pointer group"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                    onClick={() => handleContinueWatchingClick(item)}
+                  >
+                    <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-muted">
+                      {item.poster ? (
+                        <img
+                          src={item.poster}
+                          alt={item.title}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Film className="w-10 h-10 text-muted-foreground" />
+                        </div>
+                      )}
+                      
+                      {/* Progress bar */}
+                      <div className="absolute bottom-0 left-0 right-0">
+                        <Progress value={item.progress} className="h-1 rounded-none bg-black/50" />
+                      </div>
+
+                      {/* Play overlay */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="p-3 rounded-full bg-primary">
+                          <Play className="w-5 h-5 text-primary-foreground fill-current" />
+                        </div>
+                      </div>
+
+                      {/* Type badge */}
+                      {item.contentType === 'series' && (
+                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-primary/90 text-primary-foreground text-xs font-medium rounded">
+                          S{item.seasonNumber} E{item.episodeNumber}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <p className="font-medium text-sm text-foreground truncate">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round(item.progress)}% watched
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Genre sections */}
           {genres.map((genre) => (
             <div key={genre} className="space-y-4">
               <div className="flex items-center gap-2">
@@ -210,7 +312,10 @@ export function MyLibrarySection() {
       <UserMoviePlayer
         movie={playingMovie}
         open={!!playingMovie}
-        onClose={() => setPlayingMovie(null)}
+        onClose={() => {
+          setPlayingMovie(null);
+          updateContinueWatching();
+        }}
       />
 
       {/* Series Player Modal */}
@@ -221,6 +326,7 @@ export function MyLibrarySection() {
         onClose={() => {
           setPlayingSeries(null);
           setPlayingEpisode(null);
+          updateContinueWatching();
         }}
         onEpisodeChange={setPlayingEpisode}
       />
