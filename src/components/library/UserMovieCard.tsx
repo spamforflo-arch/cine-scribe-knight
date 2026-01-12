@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Play, Trash2, Film } from "lucide-react";
+import { Play, Trash2, Film, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -24,6 +24,7 @@ interface UserMovie {
   video_url: string;
   description: string | null;
   year: number | null;
+  tmdb_id?: number | null;
 }
 
 interface UserMovieCardProps {
@@ -116,6 +117,14 @@ export function UserMovieCard({ movie, onDelete, onPlay }: UserMovieCardProps) {
               <Trash2 className="w-5 h-5" />
             </button>
           </div>
+
+          {/* Streaming indicator */}
+          {(movie.video_url === "streaming" || movie.video_url === "pending") && (
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-primary/90 text-xs text-primary-foreground flex items-center gap-1">
+              <Globe className="w-3 h-3" />
+              Stream
+            </div>
+          )}
 
           {/* Year badge */}
           {movie.year && (

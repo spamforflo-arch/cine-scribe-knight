@@ -216,8 +216,9 @@ export function ContentUploadDialog({
         title: selectedContent.title,
         genre: primaryGenre,
         year: selectedContent.year || null,
-        video_url: videoUrl || "pending", // Use "pending" if no file uploaded
+        video_url: videoUrl || "streaming", // Use "streaming" for vidking if no file
         poster_url: selectedContent.poster,
+        tmdb_id: selectedContent.tmdbId,
       });
 
       if (dbError) throw dbError;

@@ -28,6 +28,7 @@ interface UserMovie {
   video_url: string;
   description: string | null;
   year: number | null;
+  tmdb_id?: number | null;
 }
 
 interface UserSeries {
