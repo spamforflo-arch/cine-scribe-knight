@@ -64,6 +64,7 @@ export type Database = {
           id: string
           poster_url: string | null
           title: string
+          tmdb_id: number | null
           updated_at: string
           video_url: string
           year: number | null
@@ -76,6 +77,7 @@ export type Database = {
           id?: string
           poster_url?: string | null
           title: string
+          tmdb_id?: number | null
           updated_at?: string
           video_url: string
           year?: number | null
@@ -88,6 +90,7 @@ export type Database = {
           id?: string
           poster_url?: string | null
           title?: string
+          tmdb_id?: number | null
           updated_at?: string
           video_url?: string
           year?: number | null
