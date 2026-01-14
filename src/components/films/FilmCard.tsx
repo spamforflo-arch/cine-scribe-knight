@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Star, Heart, Eye, BookOpen, Library } from "lucide-react";
+import { Star, Heart, Eye, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -16,7 +16,6 @@ import {
 } from "@/lib/filmStorage";
 import { useToast } from "@/hooks/use-toast";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { supabase } from "@/integrations/supabase/client";
 
 interface FilmCardProps {
   film: {
@@ -175,55 +174,6 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
         break;
     }
     setShowMenu(false);
-  };
-
-  const handleAddToLibrary = async () => {
-    triggerHaptic();
-    setShowMenu(false);
-    
-    try {
-      // Fetch genre details from TMDB
-      const action = film.mediaType === 'tv' ? 'getTVDetail' : 'getMovieDetail';
-      const { data: detail } = await supabase.functions.invoke("tmdb", {
-        body: { action, movieId: tmdbId },
-      });
-      
-      const genres = detail?.result?.genres || [];
-      const primaryGenre = genres[0] || "Uncategorized";
-
-      if (film.mediaType === 'tv') {
-        // Add as series
-        const { error } = await supabase.from("user_series").insert({
-          title: film.title,
-          genre: primaryGenre,
-          year: film.year || null,
-          poster_url: film.poster,
-          tmdb_id: tmdbId,
-        });
-        if (error) throw error;
-      } else {
-        // Add as movie
-        const { error } = await supabase.from("user_movies").insert({
-          title: film.title,
-          genre: primaryGenre,
-          year: film.year || null,
-          poster_url: film.poster,
-          video_url: "streaming", // Special value to indicate vidking streaming
-          tmdb_id: tmdbId,
-        });
-        if (error) throw error;
-      }
-
-      toast({ description: `Added "${film.title}" to your library` });
-    } catch (error: any) {
-      console.error("Add to library error:", error);
-      toast({ 
-        description: error.message?.includes('duplicate') 
-          ? "Already in your library" 
-          : "Failed to add to library",
-        variant: "destructive"
-      });
-    }
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -414,19 +364,6 @@ export function FilmCard({ film, size = "md", showRating = true, browseState }: 
                     <BookOpen className="w-5 h-5" />
                   </button>
 
-                  <button
-                    type="button"
-                    aria-label="Add to library"
-                    onClick={handleAddToLibrary}
-                    className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all",
-                      "animate-bounce-in backdrop-blur-sm",
-                      "bg-white/20 text-white border-2 border-white/40"
-                    )}
-                    style={{ animationDelay: '150ms' }}
-                  >
-                    <Library className="w-5 h-5" />
-                  </button>
                 </div>
                 
                 {/* Title at bottom */}

@@ -10,7 +10,6 @@ import PersonDetail from "./pages/PersonDetail";
 import Diary from "./pages/Diary";
 import Lists from "./pages/Lists";
 import Search from "./pages/Search";
-import SelfStreaming from "./pages/SelfStreaming";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,7 +28,6 @@ const App = () => (
           <Route path="/diary" element={<Diary />} />
           <Route path="/lists" element={<Lists />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/self-streaming" element={<SelfStreaming />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

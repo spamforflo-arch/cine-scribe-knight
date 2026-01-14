@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Compass, BookOpen, Tv } from "lucide-react";
+import { Compass, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
 
@@ -35,12 +35,6 @@ const Index = () => {
                 <Button variant="glass" size="xl" className="gap-3 min-w-[200px] click-scale">
                   <BookOpen className="w-6 h-6" />
                   View Diary
-                </Button>
-              </Link>
-              <Link to="/self-streaming">
-                <Button variant="glass" size="xl" className="gap-3 min-w-[200px] click-scale">
-                  <Tv className="w-6 h-6" />
-                  Self Streaming
                 </Button>
               </Link>
             </div>
