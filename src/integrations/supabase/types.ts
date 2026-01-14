@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      lounge_items: {
+        Row: {
+          created_at: string
+          genre: string
+          id: string
+          list_id: string | null
+          media_type: string
+          poster_url: string | null
+          title: string
+          tmdb_id: number
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          genre?: string
+          id?: string
+          list_id?: string | null
+          media_type?: string
+          poster_url?: string | null
+          title: string
+          tmdb_id: number
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          genre?: string
+          id?: string
+          list_id?: string | null
+          media_type?: string
+          poster_url?: string | null
+          title?: string
+          tmdb_id?: number
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lounge_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lounge_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lounge_lists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_episodes: {
         Row: {
           created_at: string
