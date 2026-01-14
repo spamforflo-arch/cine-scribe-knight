@@ -1,7 +1,6 @@
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { Heart, Eye, Plus, Clock, Star, ChevronLeft, Play, Loader2, Tv, Download } from "lucide-react";
+import { Heart, Eye, Plus, Clock, Star, ChevronLeft, Play, Loader2, Tv } from "lucide-react";
 import { useState, useEffect } from "react";
-import { ContentUploadDialog } from "@/components/library/ContentUploadDialog";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/films/StarRating";
 import { cn } from "@/lib/utils";
@@ -98,7 +97,6 @@ const FilmDetail = () => {
   const [currentEpisode, setCurrentEpisode] = useState(initialEpisode || 1);
   const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState("");
   const [totalEpisodesInSeason, setTotalEpisodesInSeason] = useState(0);
-  const [showAddToLibrary, setShowAddToLibrary] = useState(false);
   // Get last watched progress for this show
   const lastWatchedProgress = getContinueWatching().find(p => p.tmdbId === tmdbId);
 
@@ -504,33 +502,7 @@ const FilmDetail = () => {
                 <Plus className="w-5 h-5" />
                 Watchlist
               </Button>
-              <Button 
-                variant="glass" 
-                size="lg" 
-                className="gap-2 click-bounce"
-                onClick={() => setShowAddToLibrary(true)}
-              >
-                <Download className="w-5 h-5" />
-                Add to Library
-              </Button>
             </div>
-
-            {/* Add to Library Dialog */}
-            <ContentUploadDialog
-              open={showAddToLibrary}
-              onOpenChange={setShowAddToLibrary}
-              onContentAdded={() => {
-                toast({ description: `Added to your Self Streaming library!` });
-              }}
-              initialTMDBData={film ? {
-                tmdbId: film.tmdbId,
-                title: film.title,
-                year: film.year,
-                poster: film.poster,
-                genres: film.genres,
-                mediaType: currentMediaType === 'movie' ? 'movie' : 'tv',
-              } : null}
-            />
 
             {/* User Rating */}
             <div className="glass rounded-2xl p-5 inline-block">
