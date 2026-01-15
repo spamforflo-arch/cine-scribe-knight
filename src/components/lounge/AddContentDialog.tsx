@@ -18,14 +18,13 @@ import {
 } from "@/components/ui/select";
 
 interface SearchResult {
-  id: number;
+  id: string;
+  tmdbId: number;
   title: string;
-  name?: string;
-  poster_path: string | null;
-  release_date?: string;
-  first_air_date?: string;
-  genre_ids: number[];
-  media_type: string;
+  year: number;
+  poster: string | null;
+  rating: number;
+  mediaType: string;
 }
 
 interface LoungeList {
@@ -33,15 +32,6 @@ interface LoungeList {
   name: string;
 }
 
-// Common genres from TMDB
-const GENRE_MAP: Record<number, string> = {
-  28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy", 80: "Crime",
-  99: "Documentary", 18: "Drama", 10751: "Family", 14: "Fantasy", 36: "History",
-  27: "Horror", 10402: "Music", 9648: "Mystery", 10749: "Romance", 878: "Sci-Fi",
-  10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western",
-  10759: "Action & Adventure", 10762: "Kids", 10763: "News", 10764: "Reality",
-  10765: "Sci-Fi & Fantasy", 10766: "Soap", 10767: "Talk", 10768: "War & Politics",
-};
 
 interface AddContentDialogProps {
   open: boolean;
@@ -121,28 +111,19 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
     setAdding(true);
 
     try {
-      // Determine genre from first genre_id
-      const genreId = selectedItem.genre_ids?.[0];
-      const genre = genreId ? (GENRE_MAP[genreId] || "Uncategorized") : "Uncategorized";
-
-      // Determine media type
-      let mediaType = selectedItem.media_type || 'movie';
-      if (mediaType === 'tv' && genreId === 16) {
-        mediaType = 'anime'; // Treat animated TV as anime
+      // Use mediaType directly from TMDB response
+      let mediaType = selectedItem.mediaType || 'movie';
+      if (mediaType === 'tv') {
+        // Could be anime - for now keep as tv, the TMDB edge function handles this
+        mediaType = 'tv';
       }
 
-      const title = selectedItem.title || selectedItem.name || "Unknown";
-      const year = selectedItem.release_date || selectedItem.first_air_date;
-      const yearNum = year ? parseInt(year.split("-")[0]) : null;
-
       const { error } = await supabase.from("lounge_items").insert({
-        tmdb_id: selectedItem.id,
-        title,
-        year: yearNum,
-        poster_url: selectedItem.poster_path
-          ? `https://image.tmdb.org/t/p/w500${selectedItem.poster_path}`
-          : null,
-        genre,
+        tmdb_id: selectedItem.tmdbId,
+        title: selectedItem.title,
+        year: selectedItem.year || null,
+        poster_url: selectedItem.poster,
+        genre: "Uncategorized", // TMDB doesn't return genre names in search
         media_type: mediaType,
         list_id: useCustomList && selectedListId ? selectedListId : null,
       });
@@ -154,7 +135,7 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
           throw error;
         }
       } else {
-        toast.success(`Added "${title}" to your lounge`);
+        toast.success(`Added "${selectedItem.title}" to your lounge`);
         onContentAdded();
         resetAndClose();
       }
@@ -206,27 +187,27 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
               <div className="p-2 space-y-1">
                 {results.map((item) => (
                   <button
-                    key={`${item.media_type}-${item.id}`}
+                    key={item.id}
                     className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted text-left transition-colors"
                     onClick={() => setSelectedItem(item)}
                   >
-                    {item.poster_path ? (
+                    {item.poster ? (
                       <img
-                        src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
+                        src={item.poster.replace('/w500/', '/w92/')}
                         alt=""
                         className="w-12 h-16 object-cover rounded"
                       />
                     ) : (
                       <div className="w-12 h-16 bg-secondary rounded flex items-center justify-center">
-                        {getMediaIcon(item.media_type)}
+                        {getMediaIcon(item.mediaType)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">
-                        {item.title || item.name}
+                        {item.title}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {(item.release_date || item.first_air_date || "").split("-")[0]} • {item.media_type === 'movie' ? 'Movie' : 'TV'}
+                        {item.year || ''} • {item.mediaType === 'movie' ? 'Movie' : 'TV'}
                       </p>
                     </div>
                   </button>
@@ -239,21 +220,21 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
           {selectedItem && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
-                {selectedItem.poster_path ? (
+                {selectedItem.poster ? (
                   <img
-                    src={`https://image.tmdb.org/t/p/w92${selectedItem.poster_path}`}
+                    src={selectedItem.poster.replace('/w500/', '/w92/')}
                     alt=""
                     className="w-14 h-20 object-cover rounded"
                   />
                 ) : (
                   <div className="w-14 h-20 bg-secondary rounded flex items-center justify-center">
-                    {getMediaIcon(selectedItem.media_type)}
+                    {getMediaIcon(selectedItem.mediaType)}
                   </div>
                 )}
                 <div>
-                  <p className="font-medium">{selectedItem.title || selectedItem.name}</p>
+                  <p className="font-medium">{selectedItem.title}</p>
                   <p className="text-sm text-muted-foreground">
-                    {(selectedItem.release_date || selectedItem.first_air_date || "").split("-")[0]} • {selectedItem.media_type === 'movie' ? 'Movie' : 'TV Show'}
+                    {selectedItem.year || ''} • {selectedItem.mediaType === 'movie' ? 'Movie' : 'TV Show'}
                   </p>
                   <Button
                     variant="ghost"
