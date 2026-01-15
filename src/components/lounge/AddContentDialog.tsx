@@ -25,6 +25,7 @@ interface SearchResult {
   poster: string | null;
   rating: number;
   mediaType: string;
+  genres?: string[];
 }
 
 interface LoungeList {
@@ -45,6 +46,7 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
   const [searching, setSearching] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SearchResult | null>(null);
   const [adding, setAdding] = useState(false);
+  const [fetchingDetails, setFetchingDetails] = useState(false);
   
   // Custom list options
   const [useCustomList, setUseCustomList] = useState(false);
@@ -61,6 +63,33 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
       });
     }
   }, [open]);
+
+  // Fetch detailed info when item is selected
+  const handleSelectItem = async (item: SearchResult) => {
+    setSelectedItem(item);
+    setFetchingDetails(true);
+
+    try {
+      const action = item.mediaType === 'movie' ? 'getMovieDetail' : 'getTVDetail';
+      const { data, error } = await supabase.functions.invoke("tmdb", {
+        body: { action, movieId: item.tmdbId },
+      });
+
+      if (error) throw error;
+      
+      if (data?.result?.genres) {
+        setSelectedItem({
+          ...item,
+          genres: data.result.genres,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch details:", err);
+      // Keep item selected even if detail fetch fails
+    } finally {
+      setFetchingDetails(false);
+    }
+  };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -113,17 +142,16 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
     try {
       // Use mediaType directly from TMDB response
       let mediaType = selectedItem.mediaType || 'movie';
-      if (mediaType === 'tv') {
-        // Could be anime - for now keep as tv, the TMDB edge function handles this
-        mediaType = 'tv';
-      }
+      
+      // Get first genre or default to Uncategorized
+      const genre = selectedItem.genres?.[0] || "Uncategorized";
 
       const { error } = await supabase.from("lounge_items").insert({
         tmdb_id: selectedItem.tmdbId,
         title: selectedItem.title,
         year: selectedItem.year || null,
         poster_url: selectedItem.poster,
-        genre: "Uncategorized", // TMDB doesn't return genre names in search
+        genre,
         media_type: mediaType,
         list_id: useCustomList && selectedListId ? selectedListId : null,
       });
@@ -189,7 +217,7 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
                   <button
                     key={item.id}
                     className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted text-left transition-colors"
-                    onClick={() => setSelectedItem(item)}
+                    onClick={() => handleSelectItem(item)}
                   >
                     {item.poster ? (
                       <img
@@ -236,6 +264,13 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
                   <p className="text-sm text-muted-foreground">
                     {selectedItem.year || ''} • {selectedItem.mediaType === 'movie' ? 'Movie' : 'TV Show'}
                   </p>
+                  {fetchingDetails ? (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Loading genre...
+                    </p>
+                  ) : selectedItem.genres?.length ? (
+                    <p className="text-xs text-primary mt-1">{selectedItem.genres.slice(0, 2).join(', ')}</p>
+                  ) : null}
                   <Button
                     variant="ghost"
                     size="sm"
