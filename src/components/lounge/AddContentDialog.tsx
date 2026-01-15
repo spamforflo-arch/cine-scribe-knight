@@ -142,11 +142,14 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
     setAdding(true);
 
     try {
-      // Use mediaType directly from TMDB response
-      let mediaType = selectedItem.mediaType || 'movie';
-      
       // Get first genre or default to Uncategorized
       const genre = selectedItem.genres?.[0] || "Uncategorized";
+      
+      // Classify as anime if content has Animation genre
+      const hasAnimationGenre = selectedItem.genres?.some(
+        g => g.toLowerCase() === 'animation'
+      );
+      const mediaType = hasAnimationGenre ? 'anime' : (selectedItem.mediaType || 'movie');
 
       const { error } = await supabase.from("lounge_items").insert({
         tmdb_id: selectedItem.tmdbId,
