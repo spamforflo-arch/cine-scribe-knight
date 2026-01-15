@@ -9,6 +9,7 @@ import { Search, Plus, Film, Tv, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
   SelectContent,
@@ -41,6 +42,7 @@ interface AddContentDialogProps {
 }
 
 export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddContentDialogProps) {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -112,13 +114,13 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
   };
 
   const handleCreateList = async () => {
-    if (!newListName.trim()) return;
+    if (!newListName.trim() || !user) return;
     setCreatingList(true);
 
     try {
       const { data, error } = await supabase
         .from("lounge_lists")
-        .insert({ name: newListName.trim() })
+        .insert({ name: newListName.trim(), user_id: user.id })
         .select()
         .single();
 
@@ -136,7 +138,7 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
   };
 
   const handleAdd = async () => {
-    if (!selectedItem) return;
+    if (!selectedItem || !user) return;
     setAdding(true);
 
     try {
@@ -154,6 +156,7 @@ export function AddContentDialog({ open, onOpenChange, onContentAdded }: AddCont
         genre,
         media_type: mediaType,
         list_id: useCustomList && selectedListId ? selectedListId : null,
+        user_id: user.id,
       });
 
       if (error) {
