@@ -25,6 +25,7 @@ export type Database = {
           title: string
           tmdb_id: number
           updated_at: string
+          user_id: string | null
           year: number | null
         }
         Insert: {
@@ -37,6 +38,7 @@ export type Database = {
           title: string
           tmdb_id: number
           updated_at?: string
+          user_id?: string | null
           year?: number | null
         }
         Update: {
@@ -49,6 +51,7 @@ export type Database = {
           title?: string
           tmdb_id?: number
           updated_at?: string
+          user_id?: string | null
           year?: number | null
         }
         Relationships: [
@@ -67,18 +70,21 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -91,6 +97,7 @@ export type Database = {
           series_id: string
           title: string | null
           updated_at: string
+          user_id: string | null
           video_url: string
         }
         Insert: {
@@ -101,6 +108,7 @@ export type Database = {
           series_id: string
           title?: string | null
           updated_at?: string
+          user_id?: string | null
           video_url: string
         }
         Update: {
@@ -111,6 +119,7 @@ export type Database = {
           series_id?: string
           title?: string | null
           updated_at?: string
+          user_id?: string | null
           video_url?: string
         }
         Relationships: [
@@ -134,6 +143,7 @@ export type Database = {
           title: string
           tmdb_id: number | null
           updated_at: string
+          user_id: string | null
           video_url: string
           year: number | null
         }
@@ -147,6 +157,7 @@ export type Database = {
           title: string
           tmdb_id?: number | null
           updated_at?: string
+          user_id?: string | null
           video_url: string
           year?: number | null
         }
@@ -160,6 +171,7 @@ export type Database = {
           title?: string
           tmdb_id?: number | null
           updated_at?: string
+          user_id?: string | null
           video_url?: string
           year?: number | null
         }
@@ -175,6 +187,7 @@ export type Database = {
           title: string
           tmdb_id: number | null
           updated_at: string
+          user_id: string | null
           year: number | null
         }
         Insert: {
@@ -186,6 +199,7 @@ export type Database = {
           title: string
           tmdb_id?: number | null
           updated_at?: string
+          user_id?: string | null
           year?: number | null
         }
         Update: {
@@ -197,6 +211,7 @@ export type Database = {
           title?: string
           tmdb_id?: number | null
           updated_at?: string
+          user_id?: string | null
           year?: number | null
         }
         Relationships: []
