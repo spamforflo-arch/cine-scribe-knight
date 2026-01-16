@@ -170,6 +170,10 @@ const FilmDetail = () => {
 
   const currentMediaType = film?.mediaType || passedMediaType || 'movie';
 
+  // Classify as anime if content has Animation genre
+  const hasAnimationGenre = film?.genres?.some(g => g.toLowerCase() === 'animation');
+  const effectiveMediaType = hasAnimationGenre ? 'anime' : currentMediaType;
+
   const filmData = film ? {
     id: film.id,
     tmdbId: film.tmdbId,
@@ -177,7 +181,8 @@ const FilmDetail = () => {
     year: film.year,
     poster: film.poster,
     rating: film.rating,
-    mediaType: currentMediaType,
+    mediaType: effectiveMediaType,
+    genres: film.genres,
   } : null;
 
   const handleWatchedToggle = () => {
