@@ -12,6 +12,7 @@ import {
   StoredFilm,
   Rankings,
   RankedFilm,
+  getEffectiveMediaType,
 } from "@/lib/filmStorage";
 import { AppHeader } from "@/components/layout/AppHeader";
 
@@ -34,11 +35,11 @@ const Diary = () => {
     setRankingsState(getRankings());
   }, [activeTab]);
 
-  // Separate films by media type
+  // Separate films by media type, treating Animation genre as anime
   const separateByType = (films: StoredFilm[]) => ({
-    movies: films.filter(f => !f.mediaType || f.mediaType === 'movie'),
-    tv: films.filter(f => f.mediaType === 'tv'),
-    anime: films.filter(f => f.mediaType === 'anime'),
+    movies: films.filter(f => getEffectiveMediaType(f) === 'movie'),
+    tv: films.filter(f => getEffectiveMediaType(f) === 'tv'),
+    anime: films.filter(f => getEffectiveMediaType(f) === 'anime'),
   });
 
   const watchedByType = separateByType(watchedFilms);

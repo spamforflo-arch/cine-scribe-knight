@@ -10,6 +10,22 @@ export interface StoredFilm {
   userRating?: number;
   addedAt: string;
   mediaType?: 'movie' | 'tv' | 'anime';
+  genres?: string[];
+}
+
+// Helper to determine if content should be classified as anime
+export function isAnimeContent(film: StoredFilm): boolean {
+  // Already marked as anime
+  if (film.mediaType === 'anime') return true;
+  // Has Animation genre
+  if (film.genres?.some(g => g.toLowerCase() === 'animation')) return true;
+  return false;
+}
+
+// Get effective media type considering animation genre
+export function getEffectiveMediaType(film: StoredFilm): 'movie' | 'tv' | 'anime' {
+  if (isAnimeContent(film)) return 'anime';
+  return film.mediaType || 'movie';
 }
 
 export interface RankedFilm extends StoredFilm {
