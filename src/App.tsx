@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { migrateFilmGenres } from "@/lib/migrateFilmGenres";
 import Index from "./pages/Index";
 import Browse from "./pages/Browse";
 import FilmDetail from "./pages/FilmDetail";
@@ -18,7 +20,17 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  // Run migration on app startup
+  useEffect(() => {
+    migrateFilmGenres().then(({ migrated, alreadyDone }) => {
+      if (!alreadyDone && migrated > 0) {
+        console.log(`Migrated ${migrated} films with genre data`);
+      }
+    });
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
@@ -46,6 +58,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
